@@ -117,7 +117,7 @@ def main(args):
 
 
 if __name__ == '__main__':
-    params = argparse.ArgumentParser(description='')
+    params = argparse.ArgumentParser(description='Projects token factors across subword tokens.')
     params.add_argument('--inputs', '-i',
                         nargs='+',
                         default=None,

@@ -9,7 +9,7 @@ import re
 import sys
 
 from functools import partial
-
+from .utils import smart_open
 
 def case(token):
     if token.isupper():
@@ -29,13 +29,6 @@ def sentence_case(segment):
 def main(args):
     for line in args.input:
         print(sentence_case(line.rstrip()), file=args.output, flush=True)
-
-
-def smart_open(filename, mode = 'rt'):
-    if file.endswith('.gz'):
-        return gzip.open(filename, mode=mode, encoding='utf-8')
-    else:
-        return open(filename, mode=mode, encoding='utf-8')
 
 
 if __name__ == '__main__':

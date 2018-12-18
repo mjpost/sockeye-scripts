@@ -16,6 +16,7 @@ import re
 import sys
 
 from functools import partial
+from .utils import smart_open
 
 token_pattern = re.compile(r'__\w+(,\d+)?__')
 def is_mask(token):
@@ -34,12 +35,6 @@ def main(args):
     for line in args.input:
         print(mask_all(line.rstrip()), file=args.output, flush=True)
 
-
-def smart_open(filename, mode = 'rt'):
-    if file.endswith('.gz'):
-        return gzip.open(filename, mode=mode, encoding='utf-8')
-    else:
-        return open(filename, mode=mode, encoding='utf-8')
 
 if __name__ == '__main__':
     params = argparse.ArgumentParser(description='Marks masked words.')

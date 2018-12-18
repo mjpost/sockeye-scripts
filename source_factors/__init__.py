@@ -1,1 +1,1 @@
-__all__ = ['broadcast', 'case']
+__all__ = ['broadcast', 'case', 'utils']

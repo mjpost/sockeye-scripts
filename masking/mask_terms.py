@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 
-"""
-"""
-
 import argparse
 import json
 import logging
@@ -13,8 +10,10 @@ import sys
 from collections import defaultdict, namedtuple
 from typing import List, Optional
 
+
 def is_comment_or_empty(s: str) -> str:
     return s.startswith('#') or re.search(r'^\s*$', s)
+
 
 def get_mask(label, index: Optional[int] = None):
     """
@@ -62,15 +61,22 @@ class TermMasker:
     def unmask(self, output, orig_source, masked_source):
         """
         Removes masks.
+
+        orig_source: The boy is 10
+        masked_source: The boy is __NUM,1__
+        output: Le garçon est __NUM,1__
+
+        mask2word: { '__NUM,1__': '10' }
+
         """
         # Create a dictionary mapping indexed masks to their corresponding unmasked source words
         mask2word = dict(filter(lambda x: self.mask_matcher.match(x[0]), zip(masked_source.split(), orig_source.split())))
         # Replace these in the string one by one
-        for mask, word in mask2word.items():
-            output = output.replace(mask, word)
+        output = ' '.join([mask2word.get(word, word) for word in output.split()])
+
         return output
 
-    def mask(self, orig_source, orig_target):
+    def mask(self, orig_source, orig_target: Optional[str] = None):
         # pad with spaces
         source = ' {} '.format(orig_source).replace(' ', '  ')
         target = None if orig_target is None else ' {} '.format(orig_target)

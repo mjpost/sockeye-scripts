@@ -41,7 +41,8 @@
 *.svg binary
 #*.svg text
 *.eps binary
-sic .gitattributes for a python repo.
+
+# basic .gitattributes for a python repo.
 
 # Source files
 # ============

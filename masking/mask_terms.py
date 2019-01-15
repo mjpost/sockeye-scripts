@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*- 
 
 import argparse
 import json
@@ -64,7 +65,7 @@ class TermMasker:
 
         orig_source: The boy is 10
         masked_source: The boy is __NUM,1__
-        output: Le garçon est __NUM,1__
+        output: Le garÃ§on est __NUM,1__
 
         mask2word: { '__NUM,1__': '10' }
 

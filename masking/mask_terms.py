@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+# -*- coding: iso8859-1 -*-
 import argparse
 import json
 import logging
@@ -33,18 +33,38 @@ def singlespace(s: str) -> str:
 class TermMasker:
     def __init__(self,
                  pattern_files: List[str],
+                 term_files: List[str],
                  add_index: Optional[bool] = False) -> None:
 
         self.patterns = []
+        self.terms = {}
         self.add_index = add_index
 
         for file in pattern_files:
             self.load_patterns(file)
+        for file in term_files:
+            self.load_terms(file)
 
         self.counts = defaultdict(int)
         self.counts_missed = defaultdict(int)
+        self.counts_dupes = defaultdict(int)
 
         self.mask_matcher = re.compile(r'^__[A-Z][A-Z0-9_]*,\d+__$')
+
+    def load_terms(self, file: str):
+        with open(file) as infh:
+            for line in infh:
+                if is_comment_or_empty(line):
+                    continue
+
+                term, translation, label = line.rstrip().split('|||')
+                term = term.strip()
+                translation = translation.strip()
+                label = label.strip()
+                if term in self.terms:
+                    self.counts_dupes[term] += term
+                else:
+                    self.terms[term] = (translation, label)
 
     def load_patterns(self, file: str):
         with open(file) as infh:
@@ -71,16 +91,48 @@ class TermMasker:
         """
         # Create a dictionary mapping indexed masks to their corresponding unmasked source words
         mask2word = dict(filter(lambda x: self.mask_matcher.match(x[0]), zip(masked_source.split(), orig_source.split())))
+        print(str(mask2word))
         # Replace these in the string one by one
         output = ' '.join([mask2word.get(word, word) for word in output.split()])
 
         return output
 
     def mask(self, orig_source, orig_target: Optional[str] = None):
-        # pad with spaces
-        source = ' {} '.format(orig_source).replace(' ', '  ')
-        target = None if orig_target is None else ' {} '.format(orig_target)
+        source, target = self.mask_by_term(orig_source, orig_target)
+        source, target = self.mask_by_pattern(source, target)
+        return singlespace(source), singlespace(target)
+    
+    def mask_by_term(self, source, target: Optional[str] = None):
+        # increment the indices to use
+        indices = defaultdict(int)
+        for term in self.terms:
+            translation, label = self.terms[term]
+            print("Term: "+term+" Translation: "+translation+" Label: "+label)
+            match = re.finditer(re.escape(term), source)
+            for m in match:
+                # if there is no target, or the string matches the target too
+                tmatch = None
+                if target is not None:
+                    tmatch = re.search(re.escape(translation), target)
+                if target is None or tmatch is not None:
+                    indices[label] += 1
+                    labelstr = get_mask(label, indices[label]) if self.add_index else get_mask(label)
+                    labelstr = ' {} '.format(labelstr)
 
+                    source = source.replace(m.group(), labelstr, 1)
+                    if target is not None:
+                        target = target.replace(tmatch.group(), labelstr, 1)
+                    self.counts[label] += 1
+                else:
+                    self.counts_missed[label] += 1
+
+        return source, target
+
+    def mask_by_pattern(self, source, target: Optional[str] = None):
+        # pad with spaces
+        source = ' {} '.format(source).replace(' ', '  ')
+        target = None if target is None else ' {} '.format(target)
+        
         # increment the indices to use
         indices = defaultdict(int)
         for pattern, label in self.patterns:
@@ -99,13 +151,16 @@ class TermMasker:
                 else:
                     self.counts_missed[label] += 1
 
-        return singlespace(source), singlespace(target)
+        return source, target
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--pattern_files', '-p', nargs='+', type=str,
                         default=['{}/patterns.txt'.format(os.path.dirname(sys.argv[0]))],
                         help='List of files with patterns')
+    parser.add_argument('--term_files', '-t', nargs='+', type=str,
+                        default=['{}/dict.txt'.format(os.path.dirname(sys.argv[0]))],
+                        help='List of files with terminology dictionaries')
     parser.add_argument('--add-index', '-i', action='store_true',
                         help='Add an index to each mask')
     parser.add_argument('--unmask', '-u', action='store_true',
@@ -113,7 +168,7 @@ def main():
     parser.set_defaults(func=lambda _: parser.print_help())
     args = parser.parse_args()
 
-    masker = TermMasker(args.pattern_files, add_index=args.add_index)
+    masker = TermMasker(args.pattern_files, args.term_files, add_index=args.add_index)
 
     for lineno, line in enumerate(sys.stdin, 1):
         line = line.rstrip('\n')

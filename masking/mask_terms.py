@@ -104,9 +104,11 @@ class TermMasker:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--pattern_files', '-p', nargs='+', type=str,
+    parser.add_argument('--pattern-files', '-p', nargs='+', type=str,
                         default=['{}/patterns.txt'.format(os.path.dirname(sys.argv[0]))],
                         help='List of files with patterns')
+    parser.add_argument('--json', '-j', action='store_true',
+                        help='JSON input and output')
     parser.add_argument('--add-index', '-i', action='store_true',
                         help='Add an index to each mask')
     parser.add_argument('--unmask', '-u', action='store_true',
@@ -117,7 +119,12 @@ def main():
     masker = TermMasker(args.pattern_files, add_index=args.add_index)
 
     for lineno, line in enumerate(sys.stdin, 1):
-        line = line.rstrip('\n')
+        jobj = None
+        if args.json:
+            jobj = json.loads(line)
+            line = jobj['text']
+        else:
+            line = line.rstrip('\n')
 
         if args.unmask:
             tokens = line.split('\t')
@@ -126,7 +133,11 @@ def main():
 
             # output, orig_source, masked_source
             unmasked = masker.unmask(*tokens)
-            print(unmasked, flush=True)
+            if args.json:
+                jobj['unmasked'] = unmasked
+                print(json.dumps(jobj), flush=True)
+            else:
+                print(unmasked, flush=True)
         else:
             if '\t' in line:
                 orig_source, orig_target = line.split('\t', 1)
@@ -140,7 +151,11 @@ def main():
             source, target = masker.mask(orig_source, orig_target)
 
             if target is None:
-                print(source, flush=True)
+                if args.json:
+                    jobj['masked'] = source
+                    print(json.dumps(jobj), flush=True)
+                else:
+                    print(source, flush=True)
             else:
                 print(source, target, sep='\t', flush=True)
 

@@ -91,7 +91,7 @@ class TermMasker:
         """
         # Create a dictionary mapping indexed masks to their corresponding unmasked source words
         mask2word = dict(filter(lambda x: self.mask_matcher.match(x[0]), zip(masked_source.split(), orig_source.split())))
-        print(str(mask2word))
+
         # Replace these in the string one by one
         output = ' '.join([mask2word.get(word, word) for word in output.split()])
 
@@ -107,7 +107,6 @@ class TermMasker:
         indices = defaultdict(int)
         for term in self.terms:
             translation, label = self.terms[term]
-            print("Term: "+term+" Translation: "+translation+" Label: "+label)
             match = re.finditer(re.escape(term), source)
             for m in match:
                 # if there is no target, or the string matches the target too

@@ -48,7 +48,7 @@ def main(args):
         arg = jobj[args.input_field] + '\n'
         process.stdin.write(arg.encode('utf-8'))
         process.stdin.flush()
-        jobj[args.output_field] = process.stdout.readline().result.decode('utf-8')
+        jobj[args.output_field] = process.stdout.readline().decode('utf-8').rstrip()
 
         print(json.dumps(jobj), flush=True)
 

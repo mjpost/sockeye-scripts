@@ -50,7 +50,7 @@ def main(args):
         process.stdin.flush()
         jobj[args.output_field] = process.stdout.readline().decode('utf-8').rstrip()
 
-        print(json.dumps(jobj), flush=True)
+        print(json.dumps(jobj, ensure_ascii=False), flush=True)
 
 
 if __name__ == '__main__':

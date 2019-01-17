@@ -1,0 +1,6 @@
+t.*
+*~
+t
+tt
+__pycache__
+.philog.LOGFILE

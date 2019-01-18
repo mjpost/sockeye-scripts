@@ -76,7 +76,7 @@ class TermMasker:
                 elif len(elements) < 3:
                     label = self.default_label
                 else:
-                    label = label.strip()
+                    label = elements[2].strip()
                     
                 if term in self.terms:
                     self.counts_dupes[term] += term

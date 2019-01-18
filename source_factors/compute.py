@@ -72,7 +72,7 @@ def main(args):
         jobj = json.loads(line)
 
         if subwordenizer is not None:
-            jobj['subword'] = subwordenizer.segment(jobj['text'])
+            jobj['text'] = jobj['subword'] = subwordenizer.segment(jobj['text'])
             
         factor_names = args.factors
         factors = dict(zip(factor_names, [f.compute(jobj) for f in factors]))
@@ -83,7 +83,7 @@ def main(args):
         if subwordenizer is not None:
             jobj['factors'] = broadcast(factors['subword'], jobj['factors'])
 
-        print(json.dumps(jobj), file=args.output, flush=True)
+        print(json.dumps(jobj, ensure_ascii=False), file=args.output, flush=True)
 
 
 if __name__ == '__main__':

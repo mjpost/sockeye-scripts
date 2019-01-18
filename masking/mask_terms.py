@@ -44,8 +44,6 @@ class TermMasker:
         
         self.add_index = add_index
         
-        self.default_label = "MASK"
-        
         for file in pattern_files:
             self.load_patterns(file, plabel_override)
         
@@ -66,15 +64,12 @@ class TermMasker:
                     continue
 
                 elements = line.rstrip().split('|||')
-                if len(elements) < 2:
-                    # TODO: add error logging
-                    continue
+                if len(elements) < 3:
+                    raise Exception('Invalid dictionary file: all lines must have a label')
                 term = elements[0].strip()
                 translation = elements[1].strip()
                 if label_override:
                     label = label_override
-                elif len(elements) < 3:
-                    label = self.default_label
                 else:
                     label = elements[2].strip()
                     
@@ -91,13 +86,10 @@ class TermMasker:
 
                 elements = line.rstrip().split('|||')
                 if len(elements) < 1:
-                    # TODO: add error logging
-                    continue
+                    raise Exception('Invalid pattern file: all lines must have a label')
                 pattern = elements[0].strip()
                 if label_override:
                     label = label_override
-                elif len(elements) < 2:
-                    label = self.default_label
                 else:
                     label = elements[1].strip()
                 

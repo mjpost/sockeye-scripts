@@ -34,19 +34,23 @@ def singlespace(s: str) -> str:
 class TermMasker:
     def __init__(self,
                  pattern_files: List[str],
-                 term_files: List[str],
-                 add_index: Optional[bool] = False) -> None:
+                 dict_files: List[str],
+                 add_index: Optional[bool] = False,
+                 plabel_override: Optional[str] = None,
+                 dlabel_override: Optional[str] = None) -> None:
 
         self.patterns = []
         self.terms = {}
         
         self.add_index = add_index
         
-        for file in pattern_files:
-            self.load_patterns(file)
+        self.default_label = "MASK"
         
-        for file in term_files:
-            self.load_terms(file)
+        for file in pattern_files:
+            self.load_patterns(file, plabel_override)
+        
+        for file in dict_files:
+            self.load_terms(file, dlabel_override)
 
         self.counts = defaultdict(int)
         self.counts_missed = defaultdict(int)
@@ -55,7 +59,7 @@ class TermMasker:
         #self.mask_matcher = regex.compile(r'^__[A-Z][A-Z0-9_]*,\d+__$')
         self.mask_matcher = re.compile(r'^__[A-Z][A-Z0-9_]*,\d+__$')
 
-    def load_terms(self, file: str):
+    def load_terms(self, file: str, label_override: Optional[str] = None):
         with open(file) as infh:
             for line in infh:
                 if is_comment_or_empty(line):
@@ -64,13 +68,19 @@ class TermMasker:
                 term, translation, label = line.rstrip().split('|||')
                 term = term.strip()
                 translation = translation.strip()
-                label = label.strip()
+                if not label:
+                    label = self.default_label
+                else:
+                    label = label.strip()
+                if label_override:
+                    label = label_override
+                    
                 if term in self.terms:
                     self.counts_dupes[term] += term
                 else:
                     self.terms[term] = (translation, label)
 
-    def load_patterns(self, file: str):
+    def load_patterns(self, file: str, label_override: Optional[str] = None):
         with open(file) as infh:
             for line in infh:
                 if is_comment_or_empty(line):
@@ -78,6 +88,10 @@ class TermMasker:
 
                 pattern, label = line.rstrip().split('|||')
                 pattern = pattern.strip()
+                if not label:
+                    label = self.default_label
+                if label_override:
+                    label = label_override
                 label = label.strip()
                 # Boundary checking also needs to be handled in the patterns themselves
                 # because the behavior is different with word/non-word characters
@@ -90,9 +104,9 @@ class TermMasker:
         Produces a maybe-indexed mask.
         """
         if index is None:
-            return '__{}__'.format(label)
+            return ' __{}__ '.format(label)
         else:
-            return '__{},{}__'.format(label, index)
+            return ' __{},{}__ '.format(label, index)
     
     def unmask(self, output, masks):
         """
@@ -175,6 +189,12 @@ def main():
     parser.add_argument('--dict-files', '-d', nargs='+', type=str,
                         default=['{}/dict.txt'.format(os.path.dirname(sys.argv[0]))],
                         help='List of files with terminology')
+    parser.add_argument('--pattern-label', '-l', type=str,
+                        default=None,
+                        help='List of files with patterns')
+    parser.add_argument('--dict-label', '-t', type=str,
+                        default=None,
+                        help='List of files with terminology')
     parser.add_argument('--json', '-j', action='store_true',
                         help='JSON input and output')
     parser.add_argument('--add-index', '-i', action='store_true',
@@ -184,7 +204,7 @@ def main():
     parser.set_defaults(func=lambda _: parser.print_help())
     args = parser.parse_args()
 
-    masker = TermMasker(args.pattern_files, args.dict_files, add_index=args.add_index)
+    masker = TermMasker(args.pattern_files, args.dict_files, add_index=args.add_index, plabel_override=args.pattern_label, dlabel_override=args.dict_label)
 
     for lineno, line in enumerate(sys.stdin, 1):
         jobj = None

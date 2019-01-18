@@ -5,15 +5,15 @@
 # non-word chars, use '\B'
 
 # Internetish stuff
-\w+\@[\w\.]+	              ||| EMAIL
+[\w\.\+]+\@\w+\.[\w\.]*\w+     ||| EMAIL
 \B\@\w+	                      ||| HANDLE
-\B\#\w+                       ||| HASHTAG
 (https?|ftp)://\S+[\w/]	    ||| URL
+\#\w+                       ||| HASHTAG
 
 # Numbers
-\b\d+\.\d+      ||| NUMBER
+\d+\.\d+      ||| NUMBER
+\B-\.\d+      ||| NUMBER
 \B\.\d+      ||| NUMBER
-\b\d+              ||| NUMBER 
 
 # Emoji
 # https://apps.timwhitlock.info/emoji/tables/unicode

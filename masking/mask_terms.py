@@ -152,8 +152,8 @@ def main():
 
             if target is None:
                 if args.json:
-                    jobj['masked'] = source
-                    print(json.dumps(jobj), flush=True)
+                    jobj['text'] = jobj['masked'] = source
+                    print(json.dumps(jobj, ensure_ascii=True), flush=True)
                 else:
                     print(source, flush=True)
             else:

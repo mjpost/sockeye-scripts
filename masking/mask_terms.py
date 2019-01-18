@@ -65,15 +65,18 @@ class TermMasker:
                 if is_comment_or_empty(line):
                     continue
 
-                term, translation, label = line.rstrip().split('|||')
-                term = term.strip()
-                translation = translation.strip()
-                if not label:
+                elements = line.rstrip().split('|||')
+                if len(elements) < 2:
+                    # TODO: add error logging
+                    continue
+                term = elements[0].strip()
+                translation = elements[1].strip()
+                if label_override:
+                    label = label_override
+                elif len(elements) < 3:
                     label = self.default_label
                 else:
                     label = label.strip()
-                if label_override:
-                    label = label_override
                     
                 if term in self.terms:
                     self.counts_dupes[term] += term
@@ -86,13 +89,18 @@ class TermMasker:
                 if is_comment_or_empty(line):
                     continue
 
-                pattern, label = line.rstrip().split('|||')
-                pattern = pattern.strip()
-                if not label:
-                    label = self.default_label
+                elements = line.rstrip().split('|||')
+                if len(elements) < 1:
+                    # TODO: add error logging
+                    continue
+                pattern = elements[0].strip()
                 if label_override:
                     label = label_override
-                label = label.strip()
+                elif len(elements) < 2:
+                    label = self.default_label
+                else:
+                    label = elements[1].strip()
+                
                 # Boundary checking also needs to be handled in the patterns themselves
                 # because the behavior is different with word/non-word characters
                 # on the edges!

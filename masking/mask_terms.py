@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-# -*- coding: iso8859-1 -*-
 import argparse
 import json
 import logging
 import os
-import re
+#import re
+import regex as re
 import sys
 
 from collections import defaultdict, namedtuple
@@ -15,17 +15,18 @@ def is_comment_or_empty(s: str) -> str:
     return s.startswith('#') or re.search(r'^\s*$', s)
 
 
-def get_mask(label, index: Optional[int] = None):
-    """
-    Produces a maybe-indexed mask.
-    """
-    if index is None:
-        return '__{}__'.format(label)
-    else:
-        return '__{},{}__'.format(label, index)
+#def get_mask(label, index: Optional[int] = None):
+#    """
+#    Produces a maybe-indexed mask.
+#    """
+#    if index is None:
+#        return '__{}__'.format(label)
+#    else:
+#        return '__{},{}__'.format(label, index)
 
 def singlespace(s: str) -> str:
     if s is not None:
+        #s = regex.sub(r' +', ' ', s.strip())
         s = re.sub(r' +', ' ', s.strip())
     return s
 
@@ -38,10 +39,12 @@ class TermMasker:
 
         self.patterns = []
         self.terms = {}
+        
         self.add_index = add_index
-
+        
         for file in pattern_files:
             self.load_patterns(file)
+        
         for file in term_files:
             self.load_terms(file)
 
@@ -49,6 +52,7 @@ class TermMasker:
         self.counts_missed = defaultdict(int)
         self.counts_dupes = defaultdict(int)
 
+        #self.mask_matcher = regex.compile(r'^__[A-Z][A-Z0-9_]*,\d+__$')
         self.mask_matcher = re.compile(r'^__[A-Z][A-Z0-9_]*,\d+__$')
 
     def load_terms(self, file: str):
@@ -75,91 +79,104 @@ class TermMasker:
                 pattern, label = line.rstrip().split('|||')
                 pattern = pattern.strip()
                 label = label.strip()
-                pattern = ' ' + pattern + ' '
+                # Boundary checking also needs to be handled in the patterns themselves
+                # because the behavior is different with word/non-word characters
+                # on the edges!
+                #pattern = ' ' + pattern + ' ' 
                 self.patterns.append((pattern, label))
 
-    def unmask(self, output, orig_source, masked_source):
+    def get_mask_string(self, label, index: Optional[int] = None):
+        """
+        Produces a maybe-indexed mask.
+        """
+        if index is None:
+            return '__{}__'.format(label)
+        else:
+            return '__{},{}__'.format(label, index)
+    
+    def unmask(self, output, masks):
         """
         Removes masks.
 
-        orig_source: The boy is 10
-        masked_source: The boy is __NUM,1__
-        output: Le garçon est __NUM,1__
-
-        mask2word: { '__NUM,1__': '10' }
-
         """
-        # Create a dictionary mapping indexed masks to their corresponding unmasked source words
-        mask2word = dict(filter(lambda x: self.mask_matcher.match(x[0]), zip(masked_source.split(), orig_source.split())))
-
-        # Replace these in the string one by one
-        output = ' '.join([mask2word.get(word, word) for word in output.split()])
-
-        return output
+        unmasked = output
+        for mask in masks:
+            maskstr = mask["maskstr"]
+            #matched = mask["matched"]
+            replacement = mask["replacement"]
+            unmasked = unmasked.replace(maskstr,replacement)
+        
+        return unmasked
 
     def mask(self, orig_source, orig_target: Optional[str] = None):
-        source, target = self.mask_by_term(orig_source, orig_target)
-        source, target = self.mask_by_pattern(source, target)
-        return singlespace(source), singlespace(target)
+        masked_source, masked_target, term_masks = self.mask_by_term(orig_source, orig_target)
+        masked_source, masked_target, pattern_masks = self.mask_by_pattern(masked_source, masked_target)
+        term_masks.extend(pattern_masks)
+        if self.add_index:
+            indices = defaultdict(int)
+            for mask in term_masks:
+                maskstr = mask["maskstr"]
+                label = mask["maskstr"].replace('_','')
+                indices[label] += 1
+                indexed_label = self.get_mask_string(label, indices[label])
+                mask["maskstr"] = indexed_label
+                masked_source = masked_source.replace(maskstr,indexed_label,1)
+                if masked_target:
+                    masked_target = masked_target.replace(maskstr, indexed_label,1)
+        return masked_source, masked_target, term_masks
     
-    def mask_by_term(self, source, target: Optional[str] = None):
-        # increment the indices to use
-        indices = defaultdict(int)
+    def get_label_masks(self, label, source_pattern, unmask_string, source, target: Optional[str] = None):
+        masks = []
+        source_matches = re.finditer(source_pattern, source)
+        for source_match in source_matches:
+            if unmask_string is None:
+                unmask_string = source_match.group()
+            target_match = None
+            if target is not None:
+                target_match = re.search(re.escape(unmask_string), target)
+            
+            if target is None or target_match is not None:
+                # don't apply index to masks until after applying patterns because digits
+                labelstr = self.get_mask_string(label)
+                source = re.sub(source_pattern, labelstr, source, 1)
+                mask = { "maskstr":labelstr, "matched":source_match.group(), "replacement":unmask_string}
+                masks.append(mask)
+                if target is not None:
+                    target = re.sub(re.escape(unmask_string), labelstr, target, 1)
+                self.counts[label] += 1
+            else:
+                self.counts_missed[label] += 1
+        return source, target, masks
+        
+    def mask_by_term(self, orig_source, orig_target: Optional[str] = None):
+        source_masks =[]
+        source = orig_source
+        target = orig_target
         for term in self.terms:
             translation, label = self.terms[term]
-            match = re.finditer(re.escape(term), source)
-            for m in match:
-                # if there is no target, or the string matches the target too
-                tmatch = None
-                if target is not None:
-                    tmatch = re.search(re.escape(translation), target)
-                if target is None or tmatch is not None:
-                    indices[label] += 1
-                    labelstr = get_mask(label, indices[label]) if self.add_index else get_mask(label)
-                    labelstr = ' {} '.format(labelstr)
-
-                    source = source.replace(m.group(), labelstr, 1)
-                    if target is not None:
-                        target = target.replace(tmatch.group(), labelstr, 1)
-                    self.counts[label] += 1
-                else:
-                    self.counts_missed[label] += 1
-
-        return source, target
-
-    def mask_by_pattern(self, source, target: Optional[str] = None):
-        # pad with spaces
-        source = ' {} '.format(source).replace(' ', '  ')
-        target = None if target is None else ' {} '.format(target)
-        
-        # increment the indices to use
-        indices = defaultdict(int)
+            source, target, term_masks = self.get_label_masks(label, re.escape(term), translation, source, target)
+            source_masks.extend(term_masks)            
+        return source, target, source_masks
+    
+    def mask_by_pattern(self, orig_source, orig_target: Optional[str] = None):
+        source_masks = []
+        source = orig_source
+        target = orig_target
         for pattern, label in self.patterns:
-            match = re.finditer(pattern, source)
-            for m in match:
-                # if there is no target, or the string matches the target too
-                if target is None or m.group() in target:
-                    indices[label] += 1
-                    labelstr = get_mask(label, indices[label]) if self.add_index else get_mask(label)
-                    labelstr = ' {} '.format(labelstr)
-
-                    source = source.replace(m.group(), labelstr, 1)
-                    if target is not None:
-                        target = target.replace(m.group(), labelstr, 1)
-                    self.counts[label] += 1
-                else:
-                    self.counts_missed[label] += 1
-
-        return source, target
+            source, target, pattern_masks = self.get_label_masks(label, pattern, None, source, target)
+            source_masks.extend(pattern_masks)
+        return singlespace(source), singlespace(target), source_masks
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--pattern_files', '-p', nargs='+', type=str,
+    parser.add_argument('--pattern-files', '-p', nargs='+', type=str,
                         default=['{}/patterns.txt'.format(os.path.dirname(sys.argv[0]))],
                         help='List of files with patterns')
-    parser.add_argument('--term_files', '-t', nargs='+', type=str,
+    parser.add_argument('--dict-files', '-d', nargs='+', type=str,
                         default=['{}/dict.txt'.format(os.path.dirname(sys.argv[0]))],
-                        help='List of files with terminology dictionaries')
+                        help='List of files with terminology')
+    parser.add_argument('--json', '-j', action='store_true',
+                        help='JSON input and output')
     parser.add_argument('--add-index', '-i', action='store_true',
                         help='Add an index to each mask')
     parser.add_argument('--unmask', '-u', action='store_true',
@@ -167,19 +184,26 @@ def main():
     parser.set_defaults(func=lambda _: parser.print_help())
     args = parser.parse_args()
 
-    masker = TermMasker(args.pattern_files, args.term_files, add_index=args.add_index)
+    masker = TermMasker(args.pattern_files, args.dict_files, add_index=args.add_index)
 
     for lineno, line in enumerate(sys.stdin, 1):
-        line = line.rstrip('\n')
+        jobj = None
+        if args.json:
+            jobj = json.loads(line)
+            line = jobj['text']
+        else:
+            line = line.rstrip('\n')
 
         if args.unmask:
-            tokens = line.split('\t')
-            if len(tokens) != 3:
-                raise Exception('Need three fields (output, orig source, and masked source)!')
-
-            # output, orig_source, masked_source
-            unmasked = masker.unmask(*tokens)
-            print(unmasked, flush=True)
+            if not args.json:
+                raise Exception('Unmasking requires json format')
+            
+            output = jobj['masked_output']
+            masks = jobj['masks']
+            unmasked = masker.unmask(output, masks)
+            jobj['unmasked'] = unmasked
+            print(json.dumps(jobj), flush=True)
+            
         else:
             if '\t' in line:
                 orig_source, orig_target = line.split('\t', 1)
@@ -187,16 +211,17 @@ def main():
                 orig_source = line
                 orig_target = None
 
-                if args.unmask:
-                    raise Exception()
+            masked_source, masked_target, masks = masker.mask(orig_source, orig_target)
 
-            source, target = masker.mask(orig_source, orig_target)
-
-            if target is None:
-                print(source, flush=True)
+            if orig_target is None:
+                if args.json:
+                    jobj['masked_source'] = masked_source
+                    jobj['masks'] = masks
+                    print(json.dumps(jobj), flush=True)
+                else:
+                    print(masked_source, flush=True)
             else:
-                print(source, target, sep='\t', flush=True)
-
+                print(masked_source, masked_target, sep='\t', flush=True)
 
 if __name__ == "__main__":
     main()

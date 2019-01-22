@@ -8,15 +8,14 @@
 [\w\.\+]+\@\w+\.[\w\.]*\w+     ||| EMAIL
 \B\@\w+	                      ||| HANDLE
 # https://www.regextester.com/93652
-(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?	    ||| URL
+(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/|ftp:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?	    ||| URL
 \#\w+                       ||| HASHTAG
 
 # Numbers
-\B\d+\.\d+      ||| NUMBER
 \B-\.\d+      ||| NUMBER
 \B\.\d+      ||| NUMBER
--?\d+(,\d+)*(\.\d+(e\d+)?)?   ||| NUMBER
--?\d+(\.\d+)*(,\d+(e\d+)?)?   ||| NUMBER
+-?\d+(,\d+)*(\.\d+(e-?\d+)?)?   ||| NUMBER
+# -?\d+(\.\d+)*(,\d+(e-?\d+)?)?   ||| NUMBER
 
 # Emoji
 # https://apps.timwhitlock.info/emoji/tables/unicode

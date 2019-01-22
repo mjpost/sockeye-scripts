@@ -7,9 +7,11 @@ __NUMBER__
 __NUMBER__
 ( __NUMBER__ )  # brackets should be split
 __NUMBER__ .  # punctuations following immediately should be split
-__NUMBER__ e __NUMBER__  # exponentials have to be integers for now
-__NUMBER__  # european format
-__NUMBER__  # european format
+__NUMBER__ . __NUMBER__  # exponentials have to be integers for now
+__NUMBER__  # not supporting european format
+__NUMBER__ . __NUMBER__  # not supporting european format
+__NUMBER__  # casual decimal numbers
+__NUMBER__  # casual negative decimal numbers
 __EMOJI__  # 1f6x
 __EMOJI__  # consecutive ones
 __EMOJI__  # 1f1x
@@ -39,5 +41,5 @@ __URL__
 __URL__
 __URL__
 __URL__
-ftp:// __URL__  # ftp not supported yet
+__URL__  # ftp
 mailto: __EMAIL__  # mailto not supported yet

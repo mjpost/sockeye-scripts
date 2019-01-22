@@ -130,7 +130,7 @@ class TermMasker:
             indices = defaultdict(int)
             for mask in term_masks:
                 maskstr = mask["maskstr"]
-                label = mask["maskstr"].replace('_','')
+                label = mask["maskstr"].replace('_','').replace(' ','')
                 indices[label] += 1
                 indexed_label = self.get_mask_string(label, indices[label])
                 mask["maskstr"] = indexed_label

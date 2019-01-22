@@ -3,7 +3,6 @@ import argparse
 import json
 import logging
 import os
-#import re
 import regex as re
 import sys
 
@@ -15,18 +14,8 @@ def is_comment_or_empty(s: str) -> str:
     return s.startswith('#') or re.search(r'^\s*$', s)
 
 
-#def get_mask(label, index: Optional[int] = None):
-#    """
-#    Produces a maybe-indexed mask.
-#    """
-#    if index is None:
-#        return '__{}__'.format(label)
-#    else:
-#        return '__{},{}__'.format(label, index)
-
 def singlespace(s: str) -> str:
     if s is not None:
-        #s = regex.sub(r' +', ' ', s.strip())
         s = re.sub(r' +', ' ', s.strip())
     return s
 
@@ -54,7 +43,6 @@ class TermMasker:
         self.counts_missed = defaultdict(int)
         self.counts_dupes = defaultdict(int)
 
-        #self.mask_matcher = regex.compile(r'^__[A-Z][A-Z0-9_]*,\d+__$')
         self.mask_matcher = re.compile(r'^__[A-Z][A-Z0-9_]*,\d+__$')
 
     def load_terms(self, file: str, label_override: Optional[str] = None):
@@ -116,7 +104,6 @@ class TermMasker:
         unmasked = output
         for mask in masks:
             maskstr = mask["maskstr"]
-            #matched = mask["matched"]
             replacement = mask["replacement"]
             unmasked = unmasked.replace(maskstr,replacement)
         
@@ -130,7 +117,7 @@ class TermMasker:
             indices = defaultdict(int)
             for mask in term_masks:
                 maskstr = mask["maskstr"]
-                label = mask["maskstr"].replace('_','')
+                label = mask["maskstr"].replace('_','').replace(' ','')
                 indices[label] += 1
                 indexed_label = self.get_mask_string(label, indices[label])
                 mask["maskstr"] = indexed_label

@@ -1,8 +1,8 @@
 .spyproject
-masking/test/
 t.*
 *~
 t
 tt
 __pycache__
 .philog.LOGFILE
+masking/test/temp

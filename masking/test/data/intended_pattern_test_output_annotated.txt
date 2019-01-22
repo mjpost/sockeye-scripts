@@ -13,14 +13,15 @@ __NUMBER__  # european format
 __EMOJI__  # 1f6x
 __EMOJI__  # consecutive ones
 __EMOJI__  # 1f1x
+__EMOJI__  # 1f2x
 __EMOJI__  # 1f3x
 __EMOJI__  # 1f4x
 __EMOJI__  # 1f5x
 __EMOJI__  # 1f9x
 __EMOJI__  # 2x
-*  # multi code points not working correctly (skintone)
-*  # multi code points not working correctly (occupation)
-*  # multi code points not working correctly (family)
+__EMOJI__  # multi code points (skintone)
+__EMOJI__  # multi code points (occupation)
+__EMOJI__  # multi code points (family)
 __EMAIL__
 __EMAIL__
 __HANDLE__

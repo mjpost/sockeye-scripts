@@ -1,35 +1,65 @@
 # -*- coding: utf-8 -*-
 
 import pytest
+from mask_terms import TermMasker
 
-EPSILON = 1e-8
+TEST_PATTERNS_FILE = "/export/c11/shuoyangd/projects/whale19_masking/scripts/sockeye-scripts/masking/patterns.txt"
+TEST_INPUT_FILE = "/export/c11/shuoyangd/projects/whale19_masking/scripts/sockeye-scripts/masking/test/test.txt"
+TEST_OUTPUT_FILE = "/export/c11/shuoyangd/projects/whale19_masking/scripts/sockeye-scripts/masking/test/intended_test_output_annotated.txt"
+ADD_INDEX = False
+PLABEL = None
+DLABEL = None
 
-test_cases = [
-              ([""], ["reference"], 0.0),(["Niemand hat die Absicht, eine Mauer zu errichten"], ["Niemand hat die Absicht, eine Mauer zu errichten"], 1.0),
-              (["abcdefg"], ["hijklmnop"], 0.0),
-              (["a"], ["a"], 1.0),
-              ([""], [""], 0.0),
-              (["a b c"], ["a b c"], 1.0),
-              (["a b c"], ["abc"], 1.0),
-              ([""], ["c"], 0.0),
-              (["a", "b"], ["a", "c"], 0.5),
-              (["source"], [""], 0.0),
-              (["aa"], ["ab"], 0.25),
-              ([" Die    Beziehung zwischen  Obama und Netanjahu ist nicht gerade  freundlich. "], ["Das Verhältnis zwischen Obama und Netanyahu ist nicht gerade freundschaftlich."], 0.64130269831561459),
-              ([" risk assessment must be made of those who are qualified and expertise in the sector - these are the scientists ."], ["risk assessment has to be undertaken by those who are qualified and expert in that area - that is the scientists ."], 0.63361730303214769)]
+masker = TermMasker([TEST_PATTERNS_FILE], [], ADD_INDEX, PLABEL, DLABEL)
 
-test_cases_keep_whitespace = [
-              (["Die Beziehung zwischen Obama und Netanjahu ist nicht gerade freundlich."], ["Das Verhältnis zwischen Obama und Netanyahu ist nicht gerade freundschaftlich."], 0.67348160629772402),
-              (["risk assessment must be made of those who are qualified and expertise in the sector - these are the scientists ."], ["risk assessment has to be undertaken by those who are qualified and expert in that area - that is the scientists ."], 0.652414427449)]
+test_cases = []
+for line, expected in zip(open(TEST_INPUT_FILE), open(TEST_OUTPUT_FILE)):
+    line, expected = line.strip(), expected.strip()
+    comment_pos = expected.find('#')
+    if comment_pos != -1:
+        expected = expected[:comment_pos]
+    test_cases.append((line, expected))
 
+@pytest.mark.parametrize("line, expected", test_cases)
+def test_mask(line, expected, json=False):
 
-@pytest.mark.parametrize("hypotheses, references, expected_score", test_cases)
-def test_chrf(hypotheses, references, expected_score):
-    score = sacrebleu.corpus_chrf(hypotheses, references, 6, 3)
-    assert abs(score - expected_score) < EPSILON
+    jobj = None
+    if json:
+        jobj = json.loads(line)
+        line = jobj['text']
+    else:
+        line = line.rstrip('\n')
 
+    if '\t' in line:
+        orig_source, orig_target = line.split('\t', 1)
+    else:
+        orig_source = line
+        orig_target = None
 
-@pytest.mark.parametrize("hypotheses, references, expected_score", test_cases_keep_whitespace)
-def test_chrf_keep_whitespace(hypotheses, references, expected_score):
-    score = sacrebleu.corpus_chrf(hypotheses, references, 6, 3, remove_whitespace=False)
-    assert abs(score - expected_score) < EPSILON
+    masked_source, masked_target, masks = masker.mask(orig_source, orig_target)
+
+    if orig_target is None:
+        assert(masked_source == expected)
+    else:
+        masked = masked_source + "\t" + masked_target
+        assert(masked == expected)
+
+"""
+@pytest.mark.parametrize("line, expected", test_cases)
+def test_unmask(line, expected, json=False):
+
+    jobj = None
+    if json:
+        jobj = json.loads(line)
+        line = jobj['text']
+    else:
+        line = line.rstrip('\n')
+
+    if not json:
+        raise Exception('Unmasking requires json format')
+
+    output = jobj['masked_output']
+    masks = jobj['masks']
+    unmasked = masker.unmask(output, masks)
+    assert(unmasked == expected)
+"""

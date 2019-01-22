@@ -1,0 +1,3 @@
+{ "text" : "что-то вроде службы охотников за взяточниками, или 1-800-fight-bribes, или www.stopbribes.org или www.preventcorruption.org.", 
+    "expected_masked" : "что-то вроде __NN,1__ , или __NUMBER,1__ - __NUMBER,2__ -fight-bribes, или __URL,1__ или __URL,2__ .",
+    "expected_unmasked" : "что-то вроде bribe buster service , или 1 - 800 -fight-bribes, или www.stopbribes.org или www.preventcorruption.org ."}

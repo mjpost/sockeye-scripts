@@ -1,7 +1,6 @@
-aubergine|||eggplant|||NN
-capsicum|||bell pepper|||NN
-#double cream|||heavy cream|||NN
-#Ministry of Defence|||Defense Department|||NNP
-#1stBank|||1stBank|||NNP
-#Amazon.com|||Amazon.com|||NNP
-#Fortune 500|||Fortune 500|||NNP
+aubergine ||| eggplant ||| NN
+capsicum ||| bell pepper ||| NN
+Ministry of Defence ||| Defense Department ||| NNP
+1stBank ||| 1stBank ||| NNP
+Fortune 500 ||| Fortune 500 ||| NNP
+службы охотников за взяточниками ||| bribe buster service ||| NN

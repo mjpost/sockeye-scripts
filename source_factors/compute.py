@@ -42,7 +42,7 @@ def main(args):
             jobj['factors'] = [factors[f] for f in factor_names]
 
             if 'subword' in factors:
-                jobj['factors'] = broadcast(factors['subword'], jobj['factors'])
+                jobj['factors'] = broadcast(factors['subword'], list(filter(lambda x: x != 'subword', jobj['factors'])))
 
             print(json.dumps(jobj, ensure_ascii=False), file=args.output, flush=True)
         else:

@@ -14,7 +14,8 @@
 # Numbers
 \B-\.\d+      ||| NUMBER
 \B\.\d+      ||| NUMBER
--?\d+(,\d+)*(\.\d+(e-?\d+)?)?   ||| NUMBER
+\B-\d+(,\d+)*(\.\d+(e-?\d+)?)?   ||| NUMBER
+\b\d+(,\d+)*(\.\d+(e-?\d+)?)?   ||| NUMBER
 # -?\d+(\.\d+)*(,\d+(e-?\d+)?)?   ||| NUMBER
 
 # Emoji

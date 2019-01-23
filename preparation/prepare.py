@@ -21,7 +21,7 @@ def main(args):
     for lineno, line in enumerate(sys.stdin, 1):
         jobj = json.loads(line)
         if args.casing.startswith('lower'):
-            jobj['text'] = jobj['recased_text'] = jobj['text']
+            jobj['text'] = jobj['recased_text'] = jobj['text'].lower()
         elif args.casing == 'true':
             raise Exception('Truecasing not supported')
 
@@ -29,7 +29,8 @@ def main(args):
             if args.undo:
                 jobj['merged_text'] = jobj['text'] = subwordenizer.merge(jobj['text'])
             else:
-                jobj['subword'] = jobj['text'] = subwordenizer.segment(jobj['text'])
+                jobj['subword_text'] = jobj['text'] = subwordenizer.segment(jobj['text'])
+                jobj['subword_method'] = args.subword_type
 
         print(json.dumps(jobj, ensure_ascii=False), flush=True)
 

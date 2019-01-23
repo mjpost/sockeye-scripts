@@ -52,7 +52,7 @@ def broadcast(subword_factors: str,
             for i in range(num_factors):
                 output_factors[i].append(input_factors[i][token_i] if token_i < input_len else UNK)
 
-            if subword_factor in ['B', 'O']:
+            if subword_factor in ['E', 'O']:
                 token_i += 1
 
     output_factors = [' '.join(factor) for factor in output_factors]

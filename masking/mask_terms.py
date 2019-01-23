@@ -32,6 +32,8 @@ class TermMasker:
         self.patterns = []
         self.terms = {}
         
+        self.default_label = "TERM"
+        
         self.add_index = add_index
         
         for file in pattern_files:
@@ -39,11 +41,10 @@ class TermMasker:
         
         for file in dict_files:
             self.load_terms(file, dlabel_override)
-
+        
         self.counts = defaultdict(int)
         self.counts_missed = defaultdict(int)
-        self.counts_dupes = defaultdict(int)
-
+        
         self.mask_matcher = re.compile(r'^__[A-Z][A-Z0-9_]*,\d+__$')
     
     def reset_counts(self):
@@ -56,20 +57,29 @@ class TermMasker:
                 if is_comment_or_empty(line):
                     continue
 
-                elements = line.rstrip().split('|||')
-                if len(elements) < 3:
-                    raise Exception('Invalid dictionary file: all lines must have a label')
-                term = elements[0].strip()
-                translation = elements[1].strip()
+                
+                elements = line.rstrip().split('\t')
+                if len(elements) < 6 or len(elements) > 7:
+                    # Dictionaries are of the (tab-separated) format:
+                    # [index into dev/test]   [$lang word or phrase]       [English word or phrase]   [counts]        [oovs]  [target index]
+                    # (allowing for extra field for label later)
+                    raise Exception('Problem loading dictionary: is it in v2 format?')
+                term = elements[1].strip()
+                translation = elements[2].strip()
                 if label_override:
                     label = label_override
+                elif len(elements) < 7:
+                    label = self.default_label
                 else:
-                    label = elements[2].strip()
+                    label = elements[6].strip()
                     
                 if term in self.terms:
-                    self.counts_dupes[term] += term
+                    translations, label = self.terms[term]
+                    # TODO: Deal with multiple labels
+                    #   We have no way to tell which one to pick now, so just go with the first
+                    translations.add(translation)
                 else:
-                    self.terms[term] = (translation, label)
+                    self.terms[term] = ({translation}, label)
 
     def load_patterns(self, file: str, label_override: Optional[str] = None):
         with open(file, encoding='UTF-8') as infh:
@@ -108,12 +118,9 @@ class TermMasker:
         """
         unmasked = output
         for mask in masks:
-            print(mask)
             maskstr = mask["maskstr"]
             replacement = mask["replacement"]
-            print("before:",unmasked)
             unmasked = unmasked.replace(maskstr," "+replacement+" ")
-            print("after:",unmasked)
         
         return singlespace(unmasked)
 
@@ -156,7 +163,8 @@ class TermMasker:
         source = orig_source
         target = orig_target
         for term in self.terms:
-            translation, label = self.terms[term]
+            translations, label = self.terms[term]
+            translation = self.translations2string(translations)
             pattern = r"\b"+re.escape(term)+r"\b"
             source, target, term_masks = self.get_label_masks(label, pattern, translation, source, target)
             source_masks.extend(term_masks)            
@@ -171,6 +179,20 @@ class TermMasker:
             source, target, pattern_masks = self.get_label_masks(label, pattern, translation, source, target)
             source_masks.extend(pattern_masks)
         return source, target, source_masks
+    
+    def translations2string(self, translations):
+        if len(translations) > 1:
+            translations = list(translations)
+            translations.sort()
+            translation = str(translations)
+        else:
+            translation = ""
+            for trans in translations:
+                if translation is not "":
+                    translation = translation+"|||"+trans
+                else:
+                    translation = trans
+        return translation
 
 def main():
     parser = argparse.ArgumentParser()

@@ -41,13 +41,18 @@ def test_term_mask(line, expected):
     masked_source, masked_target, masks = masker.mask(orig_source)
     assert(masked_source == expected)
 
-json_test_cases = [("patterns.txt", "test/data/test_dict.txt", "test/data/test.json"),
+json_test_cases = [("patterns.txt", "test/data/test_dict.txt", "test/data/test_general.json"),
               ("patterns.txt", "test/data/test_dict.txt", "test/data/test_cyrillic.json"),
-              ("patterns.txt", "test/data/test_dict.txt", "test/data/test_multiword.json")
+              ("patterns.txt", "test/data/test_dict.txt", "test/data/test_multiword.json"),
+              ("", "dict.txt", "test/data/test_default_dict.json")
         ]
 @pytest.mark.parametrize("pattern_file, dict_file, json_file", json_test_cases)
 def test_json(pattern_file, dict_file, json_file):
-    masker = TermMasker([pattern_file], [dict_file], add_index=True)
+    if pattern_file is "":
+        pattern_files = []
+    else:
+        pattern_files = [pattern_file]
+    masker = TermMasker(pattern_files, [dict_file], add_index=True)
     with open (json_file, encoding='UTF-8') as jsonfile:
         jobj = json.load(jsonfile)
         orig_source = jobj['text']

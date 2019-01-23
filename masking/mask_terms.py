@@ -17,6 +17,7 @@ def is_comment_or_empty(s: str) -> str:
 def singlespace(s: str) -> str:
     if s is not None:
         s = re.sub(r' +', ' ', s.strip())
+        #s = re.sub(r' +', ' ', s)
     return s
 
 
@@ -44,9 +45,13 @@ class TermMasker:
         self.counts_dupes = defaultdict(int)
 
         self.mask_matcher = re.compile(r'^__[A-Z][A-Z0-9_]*,\d+__$')
+    
+    def reset_counts(self):
+        self.counts = defaultdict(int)
+        self.counts_missed = defaultdict(int)
 
     def load_terms(self, file: str, label_override: Optional[str] = None):
-        with open(file) as infh:
+        with open(file, encoding='UTF-8') as infh:
             for line in infh:
                 if is_comment_or_empty(line):
                     continue
@@ -67,7 +72,7 @@ class TermMasker:
                     self.terms[term] = (translation, label)
 
     def load_patterns(self, file: str, label_override: Optional[str] = None):
-        with open(file) as infh:
+        with open(file, encoding='UTF-8') as infh:
             for line in infh:
                 if is_comment_or_empty(line):
                     continue
@@ -94,7 +99,7 @@ class TermMasker:
         if index is None:
             return ' __{}__ '.format(label)
         else:
-            return ' __{},{}__ '.format(label, index)
+            return ' __{}_{}__ '.format(label, index)
     
     def unmask(self, output, masks):
         """
@@ -103,34 +108,27 @@ class TermMasker:
         """
         unmasked = output
         for mask in masks:
+            print(mask)
             maskstr = mask["maskstr"]
             replacement = mask["replacement"]
-            unmasked = unmasked.replace(maskstr,replacement)
+            print("before:",unmasked)
+            unmasked = unmasked.replace(maskstr," "+replacement+" ")
+            print("after:",unmasked)
         
-        return unmasked
+        return singlespace(unmasked)
 
     def mask(self, orig_source, orig_target: Optional[str] = None):
         masked_source, masked_target, term_masks = self.mask_by_term(orig_source, orig_target)
         masked_source, masked_target, pattern_masks = self.mask_by_pattern(masked_source, masked_target)
         term_masks.extend(pattern_masks)
-        if self.add_index:
-            indices = defaultdict(int)
-            for mask in term_masks:
-                maskstr = mask["maskstr"]
-                label = mask["maskstr"].replace('_','').replace(' ','')
-                indices[label] += 1
-                indexed_label = self.get_mask_string(label, indices[label])
-                mask["maskstr"] = indexed_label
-                masked_source = masked_source.replace(maskstr,indexed_label,1)
-                if masked_target:
-                    masked_target = masked_target.replace(maskstr, indexed_label,1)
-        return masked_source, masked_target, term_masks
+        return singlespace(masked_source), singlespace(masked_target), term_masks
     
-    def get_label_masks(self, label, source_pattern, unmask_string, source, target: Optional[str] = None):
+    def get_label_masks(self, label, source_pattern, translation, source, target: Optional[str] = None):
         masks = []
         source_matches = re.finditer(source_pattern, source)
         for source_match in source_matches:
-            if unmask_string is None:
+            unmask_string = translation
+            if translation is None:
                 unmask_string = source_match.group()
             target_match = None
             if target is not None:
@@ -138,13 +136,17 @@ class TermMasker:
             
             if target is None or target_match is not None:
                 # don't apply index to masks until after applying patterns because digits
-                labelstr = self.get_mask_string(label)
+                # actually do, just use _ instead of ',' so it won't be a boundary. Problem solved!
+                self.counts[label] += 1
+                if self.add_index:
+                    labelstr = self.get_mask_string(label, self.counts[label])
+                else:
+                    labelstr = self.get_mask_string(label)
                 source = re.sub(source_pattern, labelstr, source, 1)
-                mask = { "maskstr":labelstr, "matched":source_match.group(), "replacement":unmask_string}
-                masks.append(mask)
                 if target is not None:
                     target = re.sub(re.escape(unmask_string), labelstr, target, 1)
-                self.counts[label] += 1
+                mask = { "maskstr":labelstr.strip(), "matched":source_match.group(), "replacement":unmask_string}
+                masks.append(mask)
             else:
                 self.counts_missed[label] += 1
         return source, target, masks
@@ -155,7 +157,8 @@ class TermMasker:
         target = orig_target
         for term in self.terms:
             translation, label = self.terms[term]
-            source, target, term_masks = self.get_label_masks(label, "\b"+re.escape(term)+"\b", translation, source, target)
+            pattern = r"\b"+re.escape(term)+r"\b"
+            source, target, term_masks = self.get_label_masks(label, pattern, translation, source, target)
             source_masks.extend(term_masks)            
         return source, target, source_masks
     
@@ -164,9 +167,10 @@ class TermMasker:
         source = orig_source
         target = orig_target
         for pattern, label in self.patterns:
-            source, target, pattern_masks = self.get_label_masks(label, pattern, None, source, target)
+            translation = None
+            source, target, pattern_masks = self.get_label_masks(label, pattern, translation, source, target)
             source_masks.extend(pattern_masks)
-        return singlespace(source), singlespace(target), source_masks
+        return source, target, source_masks
 
 def main():
     parser = argparse.ArgumentParser()
@@ -212,6 +216,7 @@ def main():
             print(json.dumps(jobj), flush=True)
             
         else:
+            masker.reset_counts()
             if '\t' in line:
                 orig_source, orig_target = line.split('\t', 1)
             else:

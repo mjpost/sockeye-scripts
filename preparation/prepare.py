@@ -21,7 +21,7 @@ def main(args):
     for lineno, line in enumerate(sys.stdin, 1):
         jobj = json.loads(line)
         if args.casing.startswith('lower'):
-            jobj['text'] = jobj['recased_text'] = line.lower()
+            jobj['text'] = jobj['recased_text'] = jobj['text']
         elif args.casing == 'true':
             raise Exception('Truecasing not supported')
 

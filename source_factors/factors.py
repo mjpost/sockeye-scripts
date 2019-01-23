@@ -110,7 +110,7 @@ class SubwordFactor(Factor):
         return self.compute_sp(subword_str) if '▁' in subword_str else self.compute_bpe(subword_str)
 
     def compute_json(self, jobj):
-        return self.compute(jobj['subword'])
+        return self.compute(jobj['subword_text'])
 
 
 class CaseFactor(Factor):

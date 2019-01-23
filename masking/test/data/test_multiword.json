@@ -1,3 +1,3 @@
 { "text" : "The Ministry of Defence noted that 1stBank, the Colorado bank for you, is not on the 'Fortune 500' list", 
-    "expected_masked" : "The __NNP,1__ noted that __NNP,2__, the Colorado bank for you, is not on the ' __NNP,3__ ' list",
-    "expected_unmasked" : "The Ministry of Defense noted that 1stBank , the Colorado bank for you, is not on the ' Fortune 500 ' list"}
+    "expected_masked" : "The __NNP_1__ noted that __NNP_2__ , the Colorado bank for you, is not on the ' __NNP_3__ ' list",
+    "expected_unmasked" : "The Defense Department noted that 1stBank , the Colorado bank for you, is not on the ' Fortune 500 ' list"}

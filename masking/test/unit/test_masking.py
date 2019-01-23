@@ -12,7 +12,7 @@ DICT_TEST_INPUT_FILE = "test/data/dict_test.txt"
 DICT_TEST_OUTPUT_FILE = "test/data/intended_dict_test_output_annotated.txt"
 
 test_cases = []
-for line, expected in zip(open(PATTERN_TEST_INPUT_FILE), open(PATTERN_TEST_OUTPUT_FILE)):
+for line, expected in zip(open(PATTERN_TEST_INPUT_FILE, encoding='UTF-8'), open(PATTERN_TEST_OUTPUT_FILE,encoding='UTF-8')):
     line, expected = line.strip(), expected.strip()
     comment_pos = expected.find('#')
     if comment_pos != -1:
@@ -27,7 +27,7 @@ def test_pattern_mask(line, expected):
     assert(masked_source == expected)
 
 term_test_cases = []
-for line, expected in zip(open(DICT_TEST_INPUT_FILE), open(DICT_TEST_OUTPUT_FILE)):
+for line, expected in zip(open(DICT_TEST_INPUT_FILE, encoding='UTF-8'), open(DICT_TEST_OUTPUT_FILE, encoding='UTF-8')):
     line, expected = line.strip(), expected.strip()
     comment_pos = expected.find('#')
     if comment_pos != -1:
@@ -48,7 +48,7 @@ json_test_cases = [("patterns.txt", "test/data/test_dict.txt", "test/data/test.j
 @pytest.mark.parametrize("pattern_file, dict_file, json_file", json_test_cases)
 def test_json(pattern_file, dict_file, json_file):
     masker = TermMasker([pattern_file], [dict_file], add_index=True)
-    with open (json_file) as jsonfile:
+    with open (json_file, encoding='UTF-8') as jsonfile:
         jobj = json.load(jsonfile)
         orig_source = jobj['text']
         masked_source, masked_target, masks = masker.mask(orig_source)

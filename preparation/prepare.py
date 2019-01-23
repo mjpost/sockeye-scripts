@@ -20,13 +20,16 @@ def main(args):
 
     for lineno, line in enumerate(sys.stdin, 1):
         jobj = json.loads(line)
-        if args.casing == 'lower':
+        if args.casing.startswith('lower'):
             jobj['text'] = jobj['recased_text'] = line.lower()
         elif args.casing == 'true':
             raise Exception('Truecasing not supported')
 
         if args.subword_type != 'none':
-            jobj['subword'] = subwordenizer.segment(jobj['text'])
+            if args.undo:
+                jobj['merged_text'] = jobj['text'] = subwordenizer.merge(jobj['text'])
+            else:
+                jobj['subword'] = jobj['text'] = subwordenizer.segment(jobj['text'])
 
         print(json.dumps(jobj, ensure_ascii=False), flush=True)
 
@@ -35,7 +38,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Take in raw text, apply all preprocessing.')
     parser.add_argument('--subword-type', choices=['none', 'bpe', 'sentencepiece'], default='none', help='Subword method to apply. Default: %(default)s.')
     parser.add_argument('--subword-model', type=str, default=None, help='Location of subword model.')
-    parser.add_argument('--casing', choices=['original', 'lower', 'true'], default='original', help='Recasing to apply. Default: %(default)s.')
+    parser.add_argument('--casing', choices=['original', 'lower', 'lower_source', 'true'], default='original', help='Recasing to apply. Default: %(default)s.')
+    parser.add_argument('--undo', '-u', action='store_true', help='Undo (i.e., apply post-processing).')
 
     # parser.add_argument('--mask', type=argparse.FileType('r'), help='Apply term masking with patterns from the specified file.')
     # parser.add_argument('--source-factors', type=str, nargs='+', default=None, help='Source factors to apply.')

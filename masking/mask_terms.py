@@ -155,7 +155,7 @@ class TermMasker:
         target = orig_target
         for term in self.terms:
             translation, label = self.terms[term]
-            source, target, term_masks = self.get_label_masks(label, re.escape(term), translation, source, target)
+            source, target, term_masks = self.get_label_masks(label, "\b"+re.escape(term)+"\b", translation, source, target)
             source_masks.extend(term_masks)            
         return source, target, source_masks
     

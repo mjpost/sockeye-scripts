@@ -7,20 +7,23 @@ __NUMBER__
 __NUMBER__
 ( __NUMBER__ )  # brackets should be split
 __NUMBER__ .  # punctuations following immediately should be split
-__NUMBER__ e __NUMBER__  # exponentials have to be integers for now
-__NUMBER__  # european format
-__NUMBER__  # european format
+__NUMBER__ . __NUMBER__  # exponentials have to be integers for now
+__NUMBER__  # not supporting european format
+__NUMBER__ . __NUMBER__  # not supporting european format
+__NUMBER__  # casual decimal numbers
+__NUMBER__  # casual negative decimal numbers
 __EMOJI__  # 1f6x
 __EMOJI__  # consecutive ones
 __EMOJI__  # 1f1x
+__EMOJI__  # 1f2x
 __EMOJI__  # 1f3x
 __EMOJI__  # 1f4x
 __EMOJI__  # 1f5x
 __EMOJI__  # 1f9x
 __EMOJI__  # 2x
-*  # multi code points not working correctly (skintone)
-*  # multi code points not working correctly (occupation)
-*  # multi code points not working correctly (family)
+__EMOJI__  # multi code points (skintone)
+__EMOJI__  # multi code points (occupation)
+__EMOJI__  # multi code points (family)
 __EMAIL__
 __EMAIL__
 __HANDLE__
@@ -38,5 +41,5 @@ __URL__
 __URL__
 __URL__
 __URL__
-ftp:// __URL__  # ftp not supported yet
+__URL__  # ftp
 mailto: __EMAIL__  # mailto not supported yet

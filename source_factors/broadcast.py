@@ -2,10 +2,10 @@
 # *-* coding: utf-8 *-*
 
 """
-Takes a stream of BPE tokens and any number of streams of features computed over the
-corresponding words, and broadcasts those features over the BPE tokens.
+Takes a stream of subword factors and any number of streams of features computed over the
+corresponding words, and broadcasts those features over the subword features.
 The inputs can be tab-delimited on STDIN, or in separate files.
-Make sure that the BPE token string is the first column or file.
+***Make sure*** that the subword feature is the first column or file.
 """
 import argparse
 import sys
@@ -43,7 +43,7 @@ def broadcast(subword_factors: str,
     """
 
     num_factors = len(input_factors)
-    input_factors = [factor.split() for factor in input_factors]
+    input_factors = [factor.rstrip().split() for factor in input_factors]
     output_factors = [[] for f in range(num_factors)]
     if num_factors > 0:
         input_len = len(input_factors[0])
@@ -57,7 +57,7 @@ def broadcast(subword_factors: str,
 
     output_factors = [' '.join(factor) for factor in output_factors]
 
-    return output_factors
+    return [subword_factors] + output_factors
 
 
 def split_stream(stream: Iterable[str] = sys.stdin) -> Generator[List[str], None, None]:
@@ -75,9 +75,9 @@ def split_stream(stream: Iterable[str] = sys.stdin) -> Generator[List[str], None
 
 def main(args):
     input_stream = split_stream(sys.stdin) if args.inputs is None else zip(*args.inputs)
-    for lineno, (bpe_tokenstr, *factors) in enumerate(input_stream, 1):
+    for lineno, (subword_tokenstr, *factors) in enumerate(input_stream, 1):
 
-        broadcast_factors = broadcast(bpe_tokenstr, factors, not args.no_bpe_factor)
+        broadcast_factors = broadcast(subword_tokenstr.rstrip(), factors)
 
         print('\t'.join(broadcast_factors), file=args.output, flush=True)
 
@@ -93,8 +93,6 @@ if __name__ == '__main__':
                         type=argparse.FileType('w'),
                         default=sys.stdout,
                         help='Output file to write to. Default: STDOUT.')
-    params.add_argument('--no-bpe-factor', action='store_true',
-                        help='Do not output the BPE factor. Default: output it as the first factor.')
     args = params.parse_args()
 
     main(args)

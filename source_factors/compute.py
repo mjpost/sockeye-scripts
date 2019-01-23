@@ -9,56 +9,13 @@ import argparse
 import json
 import sys
 
-from abc import ABC, abstractmethod
-
 from broadcast import broadcast
 from factors import CaseFactor, SubwordFactor
 from typing import Iterable, List, Generator
 
 #from . import factors
 
-class Subwordenizer(ABC):
-    """
-    Generic class for providing subword segmentation.
-    This base class does nothing.
-    """
-    def __init__(self):
-        pass
-
-    def segment(self, line: str) -> str:
-        return line
-
-class BPE(Subwordenizer):
-    def __init__(self, model_path):
-        from subword_nmt import apply_bpe
-        self.model = apply_bpe.BPE(model_path)
-
-    def segment(self, sentence) -> str:
-        pass
-
-
-class SentencePiece(Subwordenizer):
-    def __init__(self, model_path):
-        import sentencepiece as spm
-        self.model = spm.SentencePieceProcessor()
-        self.model.Load(model)
-
-    def segment(self, sentence):
-        pass
-        
-
-def get_subwordenizer(method, model_path):
-    if method == 'bpe':
-        return BPE(model_path)
-    elif method == 'sentencepiece':
-        return SentencePiece(model_path)
-    else:
-        return Subwordenizer()
-
-
 def main(args):
-
-    subwordenizer = None
 
     factors = []
     for factor in args.factors:
@@ -66,24 +23,35 @@ def main(args):
             factors.append(CaseFactor())
         elif factor == 'subword':
             factors.append(SubwordFactor())
-            subwordenizer = get_subwordenizer(args.subword_type, args.subword_model)
+        else:
+            raise Exception('No such factor "{}"'.format(factor))
+
+    factor_names = args.factors
 
     for lineno, line in enumerate(args.input, 1):
-        jobj = json.loads(line)
+        if args.json:
+            """
+            This mode is used at inference time.
+            Each factor knows the field it wants and picks it out of the JSON object.
+            """
+            jobj = json.loads(line)
 
-        if subwordenizer is not None:
-            jobj['text'] = jobj['subword'] = subwordenizer.segment(jobj['text'])
-            
-        factor_names = args.factors
-        factors = dict(zip(factor_names, [f.compute(jobj) for f in factors]))
+            factors = dict(zip(factor_names, [f.compute_json(jobj) for f in factors]))
 
-        jobj['factor_names'] = factor_names
-        jobj['factors'] = [factors[f] for f in factor_names]
+            jobj['factor_names'] = factor_names
+            jobj['factors'] = [factors[f] for f in factor_names]
 
-        if subwordenizer is not None:
-            jobj['factors'] = broadcast(factors['subword'], jobj['factors'])
+            if 'subword' in factors:
+                jobj['factors'] = broadcast(factors['subword'], jobj['factors'])
 
-        print(json.dumps(jobj, ensure_ascii=False), file=args.output, flush=True)
+            print(json.dumps(jobj, ensure_ascii=False), file=args.output, flush=True)
+        else:
+            """
+            Used at training time.
+            This script is called once for each feature, with the information it needs as raw text.
+            """
+            factor_str = factors[0].compute(line)
+            print(factor_str, file=args.output)
 
 
 if __name__ == '__main__':
@@ -100,15 +68,9 @@ if __name__ == '__main__':
                         nargs='+',
                         default=[],
                         help="List of factors to compute.")
-    params.add_argument('--subword-type', '-s',
-                        choices=['bpe', 'sentencepiece', 'none'],
-                        default='none')
-    params.add_argument('--subword-model', '-m', 
-                        default=None,
-                        type=str,
-                        help='Path to the subword model.')
     params.add_argument('--json', action='store_true',
-                        help='Work with JSON input and output.')
+                        help='Work with JSON input and output (inference mode).')
+
     args = params.parse_args()
 
     main(args)

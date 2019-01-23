@@ -9,8 +9,17 @@ class Factor(ABC):
         pass
 
     @abstractmethod
-    def compute(self,
-                jobj: Dict):
+    def compute(self, segment: str):
+        """
+        Computes the factor on the tokens in the segment.
+        """
+        raise NotImplementedError()
+
+    def compute_json(self,
+                     jobj: Dict):
+        """
+        Extracts the required field from the JSON object and calls compute() with it.
+        """
         raise NotImplementedError()
 
 
@@ -92,15 +101,16 @@ class SubwordFactor(Factor):
 
         return ' '.join(factors)
 
-    def compute(self, jobj: Dict) -> str:
+    def compute(self, subword_str) -> str:
         """
         Computes features over a subword string.
         Automatically determines whether its SentencePiece or BPE.
         """
 
-        subword_str = jobj['subword']
-
         return self.compute_sp(subword_str) if '▁' in subword_str else self.compute_bpe(subword_str)
+
+    def compute_json(self, jobj):
+        return self.compute(jobj['subword'])
 
 
 class CaseFactor(Factor):
@@ -117,7 +127,9 @@ class CaseFactor(Factor):
         else:
             return '-'
 
-    def compute(self, jobj):
-        line = jobj['text']
-        return ' '.join([self.case(token) for token in line.split()])
+    def compute(self, segment: str) -> str:
+        return ' '.join([self.case(token) for token in segment.split()])
 
+    def compute_json(self, jobj: Dict) -> str:
+        return self.compute(jobj['tok_text'])
+        

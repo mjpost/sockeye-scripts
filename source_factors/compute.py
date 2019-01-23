@@ -36,13 +36,14 @@ def main(args):
             """
             jobj = json.loads(line)
 
-            factors = dict(zip(factor_names, [f.compute_json(jobj) for f in factors]))
-
             jobj['factor_names'] = factor_names
-            jobj['factors'] = [factors[f] for f in factor_names]
+            factor_results = dict(zip(factor_names, [f.compute_json(jobj) for f in factors]))
 
-            if 'subword' in factors:
-                jobj['factors'] = broadcast(factors['subword'], list(filter(lambda x: x != 'subword', jobj['factors'])))
+            if 'subword' in factor_names:
+                factors_to_broadcast = [factor_results[f] for f in factor_names if f != 'subword']
+                jobj['factors'] = broadcast(factor_results['subword'], factors_to_broadcast)
+            else:
+                jobj['factors'] = factor_results
 
             print(json.dumps(jobj, ensure_ascii=False), file=args.output, flush=True)
         else:

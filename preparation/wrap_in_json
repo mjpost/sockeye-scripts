@@ -5,17 +5,16 @@ take JSON as input, extract a field, pass it to an underlying UNIX script, and t
 the output and add it to the JSON object which is then passed to STDOUT. It takes:
 
 - an input JSON field name
-- an output JSON field name
-- a command to run
+- an optional output JSON field name
+- an optional command to run
 
 Each input line will be parsed as a JSON object, and the requested input field extracted.
-This is then run through the subcommand.
-The input JSON object is then augmented with the requested output field, whose value is the
-output of the command.
-The 'text' output field is also written (it always contains the output of the previous step).
+If the subcommand is defined, it is then run through that, and the output result (a single line) assigned to the output field.
+If the subcommand is not defined, but the output field is, the input field value is assigned to the output field.
+The 'text' output field is also set to the output of the command (if defined) or else the input field.
 
-You can also pass in plain text if you add the `-f` option. In this case, the plain text will
-be treated as if it were a JSON object with the plain text in the args.input_field name.
+You can also pass in plain text if you add the `-r` option. 
+This will cause the line on STDIN to be wrapped in a JSON object with args.input_field as the key.
 
 Author: Matt Post
 """
@@ -30,36 +29,44 @@ def main(args):
     # sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
     # sys.stdin = os.fdopen(sys.stdin.fileno(), 'r', 0)
 
-    process = subprocess.Popen(args.command.split(),
-                               stdin=subprocess.PIPE,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
+    if args.command is not None:
+        process = subprocess.Popen(args.command.split(),
+                                   stdin=subprocess.PIPE,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
 
     for lineno, line in enumerate(sys.stdin, 1):
-        try:
-            jobj = json.loads(line)
-        except ValueError:
-            if args.force:
-                jobj = { args.input_field: line.rstrip() }
-            else:
-                print('[{}] JSON parsing of input failed, creating object with field "{}"'.format(lineno, args.input_field), file=sys.stderr)
-                print('     If you want to magically turn it into JSON, rerun with `--force` (or `-f`)', file=sys.stderr)
-                raise
+        if args.raw:
+            jobj = { args.input_field: line.rstrip() }
+        else:
+            try:
+                jobj = json.loads(line)
+            except ValueError:
+                print('JSON parsing of input on line {} failed: {}'.format(lineno, line), file=sys.stderr)
+                sys.exit(1)
 
         arg = jobj[args.input_field] + '\n'
-        process.stdin.write(arg.encode('utf-8'))
-        process.stdin.flush()
-        jobj[args.output_field] = jobj['text'] = process.stdout.readline().decode('utf-8').rstrip()
+
+        if args.output_field is not None:
+            if args.command is not None:
+                process.stdin.write(arg.encode('utf-8'))
+                process.stdin.flush()
+                jobj[args.output_field] = process.stdout.readline().decode('utf-8').rstrip()
+            else:
+                jobj[args.output_field] = jobj[args.input_field]
+            jobj['text'] = jobj[args.output_field]
+        else:
+            jobj['text'] = jobj[args.input_field]
 
         print(json.dumps(jobj, ensure_ascii=False), flush=True)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='JSON wrapper')
+    parser.add_argument('--raw', '-r', action='store_true', help='Create JSON object around raw input.')
     parser.add_argument('input_field', type=str, help='The JSON input field to pass through the command.')
-    parser.add_argument('output_field', type=str, help='The JSON output field to append to the object.')
-    parser.add_argument('command', type=str, help='The command to run.')
-    parser.add_argument('--force', '-f', action='store_true', help='Force input to JSON if it is plain text.')
+    parser.add_argument('output_field', nargs='?', type=str, default=None, help='The JSON output field to append to the object.')
+    parser.add_argument('command', nargs='?', type=str, default=None, help='The command to run.')
 
     args = parser.parse_args()
     main(args)

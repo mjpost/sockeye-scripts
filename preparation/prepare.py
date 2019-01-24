@@ -19,7 +19,12 @@ def main(args):
     subwordenizer = subword.get_subwordenizer(args.subword_type, args.subword_model)
 
     for lineno, line in enumerate(sys.stdin, 1):
-        jobj = json.loads(line)
+        try:
+            jobj = json.loads(line)
+        except json.decoder.JSONDecodeError as e:
+            print('Failed to parse JSON object from line {}: {}'.format(lineno, line.rstrip()))
+            sys.exit(1)
+
         input_line = jobj[args.input_field]
 
         if args.casing.startswith('lower'):

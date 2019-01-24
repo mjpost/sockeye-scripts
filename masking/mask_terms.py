@@ -229,10 +229,10 @@ def main():
             if not args.json:
                 raise Exception('Unmasking requires json format')
             
-            output = jobj['masked_output']
+            output = jobj['translated_text']
             masks = jobj['masks']
             unmasked = masker.unmask(output, masks)
-            jobj['unmasked'] = unmasked
+            jobj['unmasked_text'] = unmasked
             print(json.dumps(jobj), flush=True)
             
         else:
@@ -247,7 +247,7 @@ def main():
 
             if orig_target is None:
                 if args.json:
-                    jobj['masked_source'] = masked_source
+                    jobj['masked_text'] = masked_source
                     jobj['masks'] = masks
                     print(json.dumps(jobj, ensure_ascii=False), flush=True)
                 else:

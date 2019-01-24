@@ -3,6 +3,9 @@
 
 """
 Apply the specified pre-processing.
+Each step of preprocessing (a) is recorded in its own field (e.g., "recased_text") and (b) overwrites the "text" field.
+In this way, (a) each stage's output is recorded and (b) subsequent steps can always access the output of the immediately
+preceding step without having to reason about what the previous step was.
 """
 
 import json
@@ -25,19 +28,21 @@ def main(args):
             print('Failed to parse JSON object from line {}: {}'.format(lineno, line.rstrip()))
             sys.exit(1)
 
-        input_line = jobj[args.input_field]
+        jobj['text'] = jobj[args.input_field]
 
         if args.casing.startswith('lower'):
-            jobj['text'] = jobj['recased_text'] = input_line.lower()
+            jobj['recased_text'] = jobj['text'] = jobj['text'].lower()
         elif args.casing == 'true':
             raise Exception('Truecasing not supported')
 
         if args.subword_type != 'none':
             if args.undo:
-                jobj['merged_text'] = jobj['text'] = subwordenizer.merge(input_line)
+                jobj['merged_text'] = jobj['text'] = subwordenizer.merge(jobj['text'])
             else:
-                jobj['subword_text'] = jobj['text'] = subwordenizer.segment(input_line)
+                jobj['subword_text'] = jobj['text'] = subwordenizer.segment(jobj['text'])
                 jobj['subword_method'] = args.subword_type
+
+        jobj['matt'] = 'test'
 
         print(json.dumps(jobj, ensure_ascii=False), flush=True)
 

@@ -44,8 +44,6 @@ class TermMasker:
         
         self.counts = defaultdict(int)
         self.counts_missed = defaultdict(int)
-        
-        self.mask_matcher = re.compile(r'^__[A-Z][A-Z0-9_]*,\d+__$')
     
     def reset_counts(self):
         self.counts = defaultdict(int)
@@ -120,7 +118,7 @@ class TermMasker:
         for mask in masks:
             maskstr = mask["maskstr"]
             replacement = mask["replacement"]
-            unmasked = unmasked.replace(maskstr," "+replacement+" ")
+            unmasked = unmasked.replace(maskstr, " "+replacement+" ")
         
         return singlespace(unmasked)
 
@@ -152,7 +150,7 @@ class TermMasker:
                 source = re.sub(source_pattern, labelstr, source, 1)
                 if target is not None:
                     target = re.sub(re.escape(unmask_string), labelstr, target, 1)
-                mask = { "maskstr":labelstr.strip(), "matched":source_match.group(), "replacement":unmask_string}
+                mask = { "maskstr" : labelstr.strip(), "matched" : source_match.group(), "replacement" : unmask_string}
                 masks.append(mask)
             else:
                 self.counts_missed[label] += 1
@@ -204,10 +202,10 @@ def main():
                         help='List of files with terminology')
     parser.add_argument('--pattern-label', '-l', type=str,
                         default=None,
-                        help='List of files with patterns')
+                        help='Override labels in pattern files with this label')
     parser.add_argument('--dict-label', '-t', type=str,
                         default=None,
-                        help='List of files with terminology')
+                        help='Override labels in dictionary files with this label')
     parser.add_argument('--json', '-j', action='store_true',
                         help='JSON input and output')
     parser.add_argument('--add-index', '-i', action='store_true',
@@ -251,7 +249,7 @@ def main():
                 if args.json:
                     jobj['masked_source'] = masked_source
                     jobj['masks'] = masks
-                    print(json.dumps(jobj), flush=True)
+                    print(json.dumps(jobj, ensure_ascii=False), flush=True)
                 else:
                     print(masked_source, flush=True)
             else:

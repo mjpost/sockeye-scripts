@@ -17,7 +17,6 @@ def is_comment_or_empty(s: str) -> str:
 def singlespace(s: str) -> str:
     if s is not None:
         s = re.sub(r' +', ' ', s.strip())
-        #s = re.sub(r' +', ' ', s)
     return s
 
 
@@ -97,7 +96,6 @@ class TermMasker:
                 # Boundary checking also needs to be handled in the patterns themselves
                 # because the behavior is different with word/non-word characters
                 # on the edges!
-                #pattern = ' ' + pattern + ' ' 
                 self.patterns.append((pattern, label))
 
     def get_mask_string(self, label, index: Optional[int] = None):
@@ -140,8 +138,6 @@ class TermMasker:
                 target_match = re.search(re.escape(unmask_string), target)
             
             if target is None or target_match is not None:
-                # don't apply index to masks until after applying patterns because digits
-                # actually do, just use _ instead of ',' so it won't be a boundary. Problem solved!
                 self.counts[label] += 1
                 if self.add_index:
                     labelstr = self.get_mask_string(label, self.counts[label])
@@ -150,7 +146,7 @@ class TermMasker:
                 source = re.sub(source_pattern, labelstr, source, 1)
                 if target is not None:
                     target = re.sub(re.escape(unmask_string), labelstr, target, 1)
-                mask = { "maskstr" : labelstr.strip(), "matched" : source_match.group(), "replacement" : unmask_string}
+                mask = { "maskstr" : labelstr.strip(), "matched" : source_match.group(), "replacement" : unmask_string }
                 masks.append(mask)
             else:
                 self.counts_missed[label] += 1

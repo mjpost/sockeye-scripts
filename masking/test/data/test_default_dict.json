@@ -1,0 +1,3 @@
+{ "text" : "ородисперсной фармацевтики раздраженного спастических срк панкреато-билиарной синдроме поливинилпирролидон полакрилином диклофенака ородисперсной", 
+    "expected_masked" : "__TERM_1__ __TERM_3__ __TERM_4__ __TERM_5__ __TERM_6__ __TERM_7__ __TERM_8__ __TERM_9__ __TERM_10__ __TERM_2__",
+    "expected_unmasked" : "orodispersible pharmaceutics irritable spastic ibs pancreaticobiliary polyvinylpyrrolidone polacrilin diclofenac orodispersible"}

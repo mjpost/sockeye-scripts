@@ -1,0 +1,3 @@
+{ "text" : "I went to https://primenow.amazon.com to buy 60 capsicum and 2.5 aubergine and -3.0 capsicums or my name isn't @nano5th! #shopping 😃", 
+    "expected_masked" : "I went to __URL_1__ to buy __NUMBER_2__ __NN_2__ and __NUMBER_3__ __NN_1__ and __NUMBER_1__ capsicums or my name isn't __HANDLE_1__ ! __HASHTAG_1__ __EMOJI_1__",
+    "expected_unmasked" : "I went to https://primenow.amazon.com to buy 60 bell pepper and 2.5 eggplant and -3.0 capsicums or my name isn't @nano5th ! #shopping 😃"}

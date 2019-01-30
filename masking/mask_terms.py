@@ -31,6 +31,8 @@ class TermMasker:
         self.patterns = []
         self.terms = {}
         
+        self.default_label = "TERM"
+        
         self.add_index = add_index
         
         for file in pattern_files:
@@ -38,36 +40,46 @@ class TermMasker:
         
         for file in dict_files:
             self.load_terms(file, dlabel_override)
-
+        
         self.counts = defaultdict(int)
         self.counts_missed = defaultdict(int)
-        self.counts_dupes = defaultdict(int)
-
-        self.mask_matcher = re.compile(r'^__[A-Z][A-Z0-9_]*,\d+__$')
+    
+    def reset_counts(self):
+        self.counts = defaultdict(int)
+        self.counts_missed = defaultdict(int)
 
     def load_terms(self, file: str, label_override: Optional[str] = None):
-        with open(file) as infh:
+        with open(file, encoding='UTF-8') as infh:
             for line in infh:
                 if is_comment_or_empty(line):
                     continue
 
-                elements = line.rstrip().split('|||')
-                if len(elements) < 3:
-                    raise Exception('Invalid dictionary file: all lines must have a label')
-                term = elements[0].strip()
-                translation = elements[1].strip()
+                
+                elements = line.rstrip().split('\t')
+                if len(elements) < 6 or len(elements) > 7:
+                    # Dictionaries are of the (tab-separated) format:
+                    # [index into dev/test]   [$lang word or phrase]       [English word or phrase]   [counts]        [oovs]  [target index]
+                    # (allowing for extra field for label later)
+                    raise Exception('Problem loading dictionary: is it in v2 format?')
+                term = elements[1].strip()
+                translation = elements[2].strip()
                 if label_override:
                     label = label_override
+                elif len(elements) < 7:
+                    label = self.default_label
                 else:
-                    label = elements[2].strip()
+                    label = elements[6].strip()
                     
                 if term in self.terms:
-                    self.counts_dupes[term] += term
+                    translations, label = self.terms[term]
+                    # TODO: Deal with multiple labels
+                    #   We have no way to tell which one to pick now, so just go with the first
+                    translations.add(translation)
                 else:
-                    self.terms[term] = (translation, label)
+                    self.terms[term] = ({translation}, label)
 
     def load_patterns(self, file: str, label_override: Optional[str] = None):
-        with open(file) as infh:
+        with open(file, encoding='UTF-8') as infh:
             for line in infh:
                 if is_comment_or_empty(line):
                     continue
@@ -84,7 +96,6 @@ class TermMasker:
                 # Boundary checking also needs to be handled in the patterns themselves
                 # because the behavior is different with word/non-word characters
                 # on the edges!
-                #pattern = ' ' + pattern + ' ' 
                 self.patterns.append((pattern, label))
 
     def get_mask_string(self, label, index: Optional[int] = None):
@@ -94,7 +105,7 @@ class TermMasker:
         if index is None:
             return ' __{}__ '.format(label)
         else:
-            return ' __{},{}__ '.format(label, index)
+            return ' __{}_{}__ '.format(label, index)
     
     def unmask(self, output, masks):
         """
@@ -105,46 +116,38 @@ class TermMasker:
         for mask in masks:
             maskstr = mask["maskstr"]
             replacement = mask["replacement"]
-            unmasked = unmasked.replace(maskstr,replacement)
+            unmasked = unmasked.replace(maskstr, " "+replacement+" ")
         
-        return unmasked
+        return singlespace(unmasked)
 
     def mask(self, orig_source, orig_target: Optional[str] = None):
         masked_source, masked_target, term_masks = self.mask_by_term(orig_source, orig_target)
         masked_source, masked_target, pattern_masks = self.mask_by_pattern(masked_source, masked_target)
         term_masks.extend(pattern_masks)
-        if self.add_index:
-            indices = defaultdict(int)
-            for mask in term_masks:
-                maskstr = mask["maskstr"]
-                label = mask["maskstr"].replace('_','').replace(' ','')
-                indices[label] += 1
-                indexed_label = self.get_mask_string(label, indices[label])
-                mask["maskstr"] = indexed_label
-                masked_source = masked_source.replace(maskstr,indexed_label,1)
-                if masked_target:
-                    masked_target = masked_target.replace(maskstr, indexed_label,1)
-        return masked_source, masked_target, term_masks
+        return singlespace(masked_source), singlespace(masked_target), term_masks
     
-    def get_label_masks(self, label, source_pattern, unmask_string, source, target: Optional[str] = None):
+    def get_label_masks(self, label, source_pattern, translation, source, target: Optional[str] = None):
         masks = []
         source_matches = re.finditer(source_pattern, source)
         for source_match in source_matches:
-            if unmask_string is None:
+            unmask_string = translation
+            if translation is None:
                 unmask_string = source_match.group()
             target_match = None
             if target is not None:
                 target_match = re.search(re.escape(unmask_string), target)
             
             if target is None or target_match is not None:
-                # don't apply index to masks until after applying patterns because digits
-                labelstr = self.get_mask_string(label)
+                self.counts[label] += 1
+                if self.add_index:
+                    labelstr = self.get_mask_string(label, self.counts[label])
+                else:
+                    labelstr = self.get_mask_string(label)
                 source = re.sub(source_pattern, labelstr, source, 1)
-                mask = { "maskstr":labelstr, "matched":source_match.group(), "replacement":unmask_string}
-                masks.append(mask)
                 if target is not None:
                     target = re.sub(re.escape(unmask_string), labelstr, target, 1)
-                self.counts[label] += 1
+                mask = { "maskstr" : labelstr.strip(), "matched" : source_match.group(), "replacement" : unmask_string }
+                masks.append(mask)
             else:
                 self.counts_missed[label] += 1
         return source, target, masks
@@ -154,8 +157,10 @@ class TermMasker:
         source = orig_source
         target = orig_target
         for term in self.terms:
-            translation, label = self.terms[term]
-            source, target, term_masks = self.get_label_masks(label, re.escape(term), translation, source, target)
+            translations, label = self.terms[term]
+            translation = self.translations2string(translations)
+            pattern = r"\b"+re.escape(term)+r"\b"
+            source, target, term_masks = self.get_label_masks(label, pattern, translation, source, target)
             source_masks.extend(term_masks)            
         return source, target, source_masks
     
@@ -164,9 +169,24 @@ class TermMasker:
         source = orig_source
         target = orig_target
         for pattern, label in self.patterns:
-            source, target, pattern_masks = self.get_label_masks(label, pattern, None, source, target)
+            translation = None
+            source, target, pattern_masks = self.get_label_masks(label, pattern, translation, source, target)
             source_masks.extend(pattern_masks)
-        return singlespace(source), singlespace(target), source_masks
+        return source, target, source_masks
+    
+    def translations2string(self, translations):
+        if len(translations) > 1:
+            translations = list(translations)
+            translations.sort()
+            translation = str(translations)
+        else:
+            translation = ""
+            for trans in translations:
+                if translation is not "":
+                    translation = translation+"|||"+trans
+                else:
+                    translation = trans
+        return translation
 
 def main():
     parser = argparse.ArgumentParser()
@@ -178,10 +198,10 @@ def main():
                         help='List of files with terminology')
     parser.add_argument('--pattern-label', '-l', type=str,
                         default=None,
-                        help='List of files with patterns')
+                        help='Override labels in pattern files with this label')
     parser.add_argument('--dict-label', '-t', type=str,
                         default=None,
-                        help='List of files with terminology')
+                        help='Override labels in dictionary files with this label')
     parser.add_argument('--json', '-j', action='store_true',
                         help='JSON input and output')
     parser.add_argument('--add-index', '-i', action='store_true',
@@ -205,13 +225,14 @@ def main():
             if not args.json:
                 raise Exception('Unmasking requires json format')
             
-            output = jobj['masked_output']
+            output = jobj['translated_text']
             masks = jobj['masks']
             unmasked = masker.unmask(output, masks)
-            jobj['unmasked'] = unmasked
+            jobj['unmasked_text'] = unmasked
             print(json.dumps(jobj), flush=True)
             
         else:
+            masker.reset_counts()
             if '\t' in line:
                 orig_source, orig_target = line.split('\t', 1)
             else:
@@ -222,9 +243,9 @@ def main():
 
             if orig_target is None:
                 if args.json:
-                    jobj['masked_source'] = masked_source
+                    jobj['masked_text'] = masked_source
                     jobj['masks'] = masks
-                    print(json.dumps(jobj), flush=True)
+                    print(json.dumps(jobj, ensure_ascii=False), flush=True)
                 else:
                     print(masked_source, flush=True)
             else:

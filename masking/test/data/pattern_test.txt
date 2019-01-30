@@ -39,6 +39,9 @@ www.google.com
 google.com
 ed.ac.uk
 https://github.com/nano5th
+(https://github.com/nano5th)
+(https://github.com/nano5th/)
+https://www.youtube.com/watch?v=CPf1IM6zgaY
 https://github.com/nano5th/sockeye-scripts/blob/dict/masking/patterns.txt
 http://ruder.io/optimizing-gradient-descent/index.html#adam
 ftp://mirrors.ocf.berkeley.edu/gnu/

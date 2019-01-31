@@ -30,20 +30,20 @@ class TermMasker:
 
         self.patterns = []
         self.terms = {}
-        
+
         self.default_label = "TERM"
-        
+
         self.add_index = add_index
-        
+
         for file in pattern_files:
             self.load_patterns(file, plabel_override)
-        
+
         for file in dict_files:
             self.load_terms(file, dlabel_override)
-        
+
         self.counts = defaultdict(int)
         self.counts_missed = defaultdict(int)
-    
+
     def reset_counts(self):
         self.counts = defaultdict(int)
         self.counts_missed = defaultdict(int)
@@ -54,7 +54,6 @@ class TermMasker:
                 if is_comment_or_empty(line):
                     continue
 
-                
                 elements = line.rstrip().split('\t')
                 if len(elements) < 6 or len(elements) > 7:
                     # Dictionaries are of the (tab-separated) format:
@@ -69,7 +68,7 @@ class TermMasker:
                     label = self.default_label
                 else:
                     label = elements[6].strip()
-                    
+
                 if term in self.terms:
                     translations, label = self.terms[term]
                     # TODO: Deal with multiple labels
@@ -92,7 +91,7 @@ class TermMasker:
                     label = label_override
                 else:
                     label = elements[1].strip()
-                
+
                 # Boundary checking also needs to be handled in the patterns themselves
                 # because the behavior is different with word/non-word characters
                 # on the edges!
@@ -106,7 +105,7 @@ class TermMasker:
             return ' __{}__ '.format(label)
         else:
             return ' __{}_{}__ '.format(label, index)
-    
+
     def unmask(self, output, masks):
         """
         Removes masks.
@@ -117,7 +116,7 @@ class TermMasker:
             maskstr = mask["maskstr"]
             replacement = mask["replacement"]
             unmasked = unmasked.replace(maskstr, " "+replacement+" ")
-        
+
         return singlespace(unmasked)
 
     def mask(self, orig_source, orig_target: Optional[str] = None):
@@ -125,7 +124,7 @@ class TermMasker:
         masked_source, masked_target, pattern_masks = self.mask_by_pattern(masked_source, masked_target)
         term_masks.extend(pattern_masks)
         return singlespace(masked_source), singlespace(masked_target), term_masks
-    
+
     def get_label_masks(self, label, source_pattern, translation, source, target: Optional[str] = None):
         masks = []
         source_matches = re.finditer(source_pattern, source)
@@ -136,7 +135,7 @@ class TermMasker:
             target_match = None
             if target is not None:
                 target_match = re.search(re.escape(unmask_string), target)
-            
+
             if target is None or target_match is not None:
                 self.counts[label] += 1
                 if self.add_index:
@@ -151,7 +150,7 @@ class TermMasker:
             else:
                 self.counts_missed[label] += 1
         return source, target, masks
-        
+
     def mask_by_term(self, orig_source, orig_target: Optional[str] = None):
         source_masks =[]
         source = orig_source
@@ -161,9 +160,9 @@ class TermMasker:
             translation = self.translations2string(translations)
             pattern = r"\b"+re.escape(term)+r"\b"
             source, target, term_masks = self.get_label_masks(label, pattern, translation, source, target)
-            source_masks.extend(term_masks)            
+            source_masks.extend(term_masks)
         return source, target, source_masks
-    
+
     def mask_by_pattern(self, orig_source, orig_target: Optional[str] = None):
         source_masks = []
         source = orig_source
@@ -173,7 +172,7 @@ class TermMasker:
             source, target, pattern_masks = self.get_label_masks(label, pattern, translation, source, target)
             source_masks.extend(pattern_masks)
         return source, target, source_masks
-    
+
     def translations2string(self, translations):
         if len(translations) > 1:
             translations = list(translations)
@@ -224,13 +223,13 @@ def main():
         if args.unmask:
             if not args.json:
                 raise Exception('Unmasking requires json format')
-            
-            output = jobj['translated_text']
+
+            output = jobj['translation']
             masks = jobj['masks']
             unmasked = masker.unmask(output, masks)
-            jobj['unmasked_text'] = unmasked
+            jobj['unmasked_translation'] = unmasked
             print(json.dumps(jobj), flush=True)
-            
+
         else:
             masker.reset_counts()
             if '\t' in line:

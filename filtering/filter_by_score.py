@@ -19,7 +19,7 @@ def main(args):
             skipped += 1
             continue
 
-        print(combined_score, source, target, sep='\t')
+        print(combined_score, source, target, sep='\t', flush=True)
 
     if args.threshold != None:
         print('Skipped {} / {} lines at threshold {}'.format(skipped, i, args.threshold))

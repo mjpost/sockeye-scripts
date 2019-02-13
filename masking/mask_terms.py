@@ -49,6 +49,13 @@ class TermMasker:
         self.counts_missed = defaultdict(int)
 
     def load_terms(self, file: str, label_override: Optional[str] = None):
+        """
+        Loads dictionary terms from a file.
+                    # Dictionaries are of the (tab-separated) format:
+                    # [index into dev/test]   [$lang word or phrase]       [English word or phrase]   [counts]        [oovs]  [target index]
+                    # (allowing for extra field for label later)
+        """
+
         with open(file, encoding='UTF-8') as infh:
             for line in infh:
                 if is_comment_or_empty(line):
@@ -56,9 +63,6 @@ class TermMasker:
 
                 elements = line.rstrip().split('\t')
                 if len(elements) < 6 or len(elements) > 7:
-                    # Dictionaries are of the (tab-separated) format:
-                    # [index into dev/test]   [$lang word or phrase]       [English word or phrase]   [counts]        [oovs]  [target index]
-                    # (allowing for extra field for label later)
                     raise Exception('Problem loading dictionary: is it in v2 format?')
                 term = elements[1].strip()
                 translation = elements[2].strip()
@@ -77,7 +81,19 @@ class TermMasker:
                 else:
                     self.terms[term] = ({translation}, label)
 
-    def load_patterns(self, file: str, label_override: Optional[str] = None):
+    def load_patterns(self,
+                      file: str,
+                      label_override: Optional[str] = None):
+        """
+        Loads patterns from a file.
+        Patterns are of the form
+
+            PATTERN ||| MASK
+
+        where PATTERN is a regular expression (matching anywhere in the string) and MASK
+        the mask to replace it with.
+        If `label_override` is defined, it will be used as the mask always.
+        """
         with open(file, encoding='UTF-8') as infh:
             for line in infh:
                 if is_comment_or_empty(line):
@@ -87,24 +103,23 @@ class TermMasker:
                 if len(elements) < 1:
                     raise Exception('Invalid pattern file: all lines must have a label')
                 pattern = elements[0].strip()
-                if label_override:
-                    label = label_override
-                else:
-                    label = elements[1].strip()
+                label = label_override if label_override else elements[1].strip()
 
                 # Boundary checking also needs to be handled in the patterns themselves
                 # because the behavior is different with word/non-word characters
                 # on the edges!
                 self.patterns.append((pattern, label))
 
-    def get_mask_string(self, label, index: Optional[int] = None):
+    def get_mask_string(self,
+                        label: str,
+                        index: Optional[int] = None):
         """
-        Produces a maybe-indexed mask.
+        Computes the mask for strings, adding the index if required.
         """
-        if index is None:
-            return ' __{}__ '.format(label)
-        else:
+        if self.add_index:
             return ' __{}_{}__ '.format(label, index)
+        else:
+            return ' __{}__ '.format(label)
 
     def unmask(self, output, masks):
         """
@@ -125,38 +140,53 @@ class TermMasker:
         term_masks.extend(pattern_masks)
         return singlespace(masked_source), singlespace(masked_target), term_masks
 
-    def get_label_masks(self, label, source_pattern, translation, source, target: Optional[str] = None):
+    def get_label_masks(self,
+                        label,
+                        source_pattern,
+                        translation,
+                        source,
+                        target: Optional[str] = None):
+        """
+        Search for `source_pattern` in `source`.
+        If `target` is None, replace the matched text with `label`.
+        If `target` is not None, replace the matched text with `label` only if `translation` can be found in `target`.
+        If `translation` is None, the matched text is used to match against `target` instead.
+        """
         masks = []
-        source_matches = re.finditer(source_pattern, source)
-        for source_match in source_matches:
-            unmask_string = translation
-            if translation is None:
-                unmask_string = source_match.group()
-            target_match = None
+        for source_match in re.finditer(source_pattern, source):
+            matched_text = source_match.group()
+            replacement_text = translation if translation is not None else matched_text
             if target is not None:
-                target_match = re.search(re.escape(unmask_string), target)
+                try:
+                    # the text to match in the target
+                    target_index = target.index(replacement_text)
+                except ValueError:
+                    target_index = None
 
-            if target is None or target_match is not None:
+            if target is None or target_index is not None:
                 self.counts[label] += 1
-                if self.add_index:
-                    labelstr = self.get_mask_string(label, self.counts[label])
-                else:
-                    labelstr = self.get_mask_string(label)
+                labelstr = self.get_mask_string(label, self.counts[label])
+
+                # Run the regex again so we make sure to get the exact place
+                # (str.replace here would be quicker but does not adhere to
+                #  string boundaries in the regex)
                 source = re.sub(source_pattern, labelstr, source, 1)
                 if target is not None:
-                    target = re.sub(re.escape(unmask_string), labelstr, target, 1)
-                mask = { "maskstr" : labelstr.strip(), "matched" : source_match.group(), "replacement" : unmask_string }
+                    target = target.replace(replacement_text, labelstr, 1)
+
+                mask = { "maskstr" : labelstr.strip(), "matched" : matched_text, "replacement" : replacement_text }
                 masks.append(mask)
             else:
                 self.counts_missed[label] += 1
         return source, target, masks
 
-    def mask_by_term(self, orig_source, orig_target: Optional[str] = None):
+    def mask_by_term(self,
+                     orig_source,
+                     orig_target: Optional[str] = None):
         source_masks =[]
         source = orig_source
         target = orig_target
-        for term in self.terms:
-            translations, label = self.terms[term]
+        for term, (translations, label) in self.terms.items():
             translation = self.translations2string(translations)
             pattern = r"\b"+re.escape(term)+r"\b"
             source, target, term_masks = self.get_label_masks(label, pattern, translation, source, target)
@@ -173,7 +203,10 @@ class TermMasker:
             source_masks.extend(pattern_masks)
         return source, target, source_masks
 
-    def translations2string(self, translations):
+    def translations2string(self, translations: List[str]) -> str:
+        """
+        Returns a list of translations as a string.
+        """
         if len(translations) > 1:
             translations = list(translations)
             translations.sort()

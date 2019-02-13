@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+"""
+Takes in tab-delimited triples of (combined score, source, target) and only prints lines above the threshold.
+"""
+
 import argparse
 import math
 import sys
@@ -8,15 +12,14 @@ def main(args):
     skipped = 0
     i = 0
     for i, line in enumerate(sys.stdin, 1):
-        score1, score2, source, target = line.rstrip().split('\t')
-        score1, score2 = float(score1), float(score2)
+        combined_score, source, target = line.rstrip().split('\t')
+        combined_score = float(combined_score)
 
-        score = -math.exp(abs(score1 - score2) + 0.5 * (score1 + score2))
-
-        if args.threshold != None and score < args.threshold:
+        if args.threshold != None and combined_score < args.threshold:
             skipped += 1
             continue
-        print(score, score1, score2, source, target, sep='\t')
+
+        print(combined_score, source, target, sep='\t')
 
     if args.threshold != None:
         print('Skipped {} / {} lines at threshold {}'.format(skipped, i, args.threshold))

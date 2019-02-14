@@ -11,19 +11,17 @@ import sys
 
 from typing import Iterable, List, Generator
 
-from .factors import CaseFactor, SubwordFactor
-from . import broadcast
-
-#from . import factors
+import factors as f
+import broadcast
 
 def main(args):
 
-    factors = []
+    factor_list = []
     for factor in args.factors:
         if factor == 'case':
-            factors.append(CaseFactor())
+            factor_list.append(f.CaseFactor())
         elif factor == 'subword':
-            factors.append(SubwordFactor())
+            factor_list.append(f.SubwordFactor())
         else:
             raise Exception('No such factor "{}"'.format(factor))
 
@@ -38,11 +36,11 @@ def main(args):
             jobj = json.loads(line)
 
             jobj['factor_names'] = factor_names
-            factor_results = dict(zip(factor_names, [f.compute_json(jobj) for f in factors]))
+            factor_results = dict(zip(factor_names, [f.compute_json(jobj) for f in factor_list]))
 
             if 'subword' in factor_names:
                 factors_to_broadcast = [factor_results[f] for f in factor_names if f != 'subword']
-                jobj['factors'] = broadcast(factor_results['subword'], factors_to_broadcast)
+                jobj['factors'] = broadcast.broadcast(factor_results['subword'], factors_to_broadcast)
             else:
                 jobj['factors'] = factor_results
 
@@ -52,7 +50,7 @@ def main(args):
             Used at training time.
             This script is called once for each feature, with the information it needs as raw text.
             """
-            factor_str = factors[0].compute(line)
+            factor_str = factor_list[0].compute(line)
             print(factor_str, file=args.output)
 
 

@@ -42,8 +42,6 @@ def main(args):
                 jobj['subword_text'] = jobj['text'] = subwordenizer.segment(jobj['text'])
                 jobj['subword_method'] = args.subword_type
 
-        jobj['matt'] = 'test'
-
         print(json.dumps(jobj, ensure_ascii=False), flush=True)
 
 

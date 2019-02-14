@@ -9,9 +9,10 @@ import argparse
 import json
 import sys
 
-from broadcast import broadcast
-from factors import CaseFactor, SubwordFactor
 from typing import Iterable, List, Generator
+
+from .factors import CaseFactor, SubwordFactor
+from . import broadcast
 
 #from . import factors
 

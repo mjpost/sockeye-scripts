@@ -11,17 +11,17 @@ import sys
 
 from typing import Iterable, List, Generator
 
-import factors as f
-import broadcast
+from .factors import CaseFactor, SubwordFactor
+from .broadcast import broadcast
 
 def main(args):
 
     factor_list = []
     for factor in args.factors:
         if factor == 'case':
-            factor_list.append(f.CaseFactor())
+            factor_list.append(CaseFactor())
         elif factor == 'subword':
-            factor_list.append(f.SubwordFactor())
+            factor_list.append(SubwordFactor())
         else:
             raise Exception('No such factor "{}"'.format(factor))
 
@@ -40,7 +40,7 @@ def main(args):
 
             if 'subword' in factor_names:
                 factors_to_broadcast = [factor_results[f] for f in factor_names if f != 'subword']
-                jobj['factors'] = broadcast.broadcast(factor_results['subword'], factors_to_broadcast)
+                jobj['factors'] = broadcast(factor_results['subword'], factors_to_broadcast)
             else:
                 jobj['factors'] = factor_results
 

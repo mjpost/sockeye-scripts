@@ -46,13 +46,18 @@ class SentencePiece(Subwordenizer):
     Implements SentencePiece.
     https://github.com/google/sentencepiece/blob/master/python/README.md
     """
-    def __init__(self, model_path):
+    def __init__(self, model_path, alpha: float = 0.5):
         import sentencepiece as spm
         self.model = spm.SentencePieceProcessor()
+        self.model.Load(model_path)
+        self.alpha = alpha
+        self.sample = True
 
-    def segment(self, sentence):
-#        return ' '.join(self.model.SampleEncodeAsPieces(sentence))
-        return ' '.join(self.model.EncodeAsPieces(sentence))
+    def segment(self, sentence) -> str:
+        if self.sample:
+            return ' '.join(self.model.SampleEncodeAsPieces(sentence, nbest_size=1, alpha=self.alpha))
+        else:
+            return ' '.join(self.model.EncodeAsPieces(sentence))
 
     def merge(self, sentence: str) -> str:
         return self.model.DecodePieces(sentence.split())

@@ -49,7 +49,8 @@ class SentencePiece(Subwordenizer):
     def __init__(self, model_path, alpha: float = 0.5):
         import sentencepiece as spm
         self.model = spm.SentencePieceProcessor()
-        self.model.Load(model_path)
+        if model_path is not None:
+            self.model.Load(model_path)
         self.alpha = alpha
         self.sample = True
 

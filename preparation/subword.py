@@ -67,7 +67,7 @@ class SentencePiece(Subwordenizer):
         if self.model_path is not None:
             return self.model.DecodePieces(sentence.split())
         else:
-            return sentence.replace(' ', '').replace('▁', ' ')
+            return sentence.replace(' ', '').replace('▁', ' ').strip()
         
 
 def get_subwordenizer(method, model_path, glossary: List[str] = []):

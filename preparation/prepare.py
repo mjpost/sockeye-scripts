@@ -19,7 +19,7 @@ def main(args):
     # sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
     # sys.stdin = os.fdopen(sys.stdin.fileno(), 'r', 0)
 
-    subwordenizer = subword.get_subwordenizer(args.subword_type, args.subword_model)
+    subwordenizer = subword.get_subwordenizer(args.subword_type, args.subword_model, args.subword_glossary)
 
     for lineno, line in enumerate(sys.stdin, 1):
         try:
@@ -49,6 +49,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Take in raw text, apply all preprocessing.')
     parser.add_argument('--subword-type', choices=['none', 'bpe', 'sentencepiece'], default='none', help='Subword method to apply. Default: %(default)s.')
     parser.add_argument('--subword-model', type=str, default=None, help='Location of subword model.')
+    parser.add_argument('--subword-glossary', type=str, nargs='+', default=[], help='Glossary terms that should not be split (BPE only).')
     parser.add_argument('--casing', choices=['original', 'lower', 'lower_source', 'true'], default='original', help='Recasing to apply. Default: %(default)s.')
     parser.add_argument('--undo', '-u', action='store_true', help='Undo (i.e., apply post-processing).')
     parser.add_argument('--input-field', '-f', type=str, default='text', help='The JSON input field to begin work on.')

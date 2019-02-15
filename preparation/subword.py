@@ -1,7 +1,9 @@
 # *-* coding: utf-8 *-*
 
-from abc import ABC
 import re
+
+from abc import ABC
+from typing import List, Optional
 
 class Subwordenizer(ABC):
     """
@@ -22,13 +24,13 @@ class BPE(Subwordenizer):
     """
     Implements BPE.
     """
-    def __init__(self, model_path=None):
+    def __init__(self, model_path=None, glossary: Optional[List[str] = None):
         from subword_nmt import apply_bpe
         self.unsegment_re = re.compile(r'@@( |$)')
 
         self.model = None
         if model_path is not None:
-            self.model = apply_bpe.BPE(open(model_path))
+            self.model = apply_bpe.BPE(open(model_path), glossaries=glossary)
 
     def segment(self, sentence) -> str:
         """Segments a string."""
@@ -64,9 +66,9 @@ class SentencePiece(Subwordenizer):
         return self.model.DecodePieces(sentence.split())
         
 
-def get_subwordenizer(method, model_path):
+def get_subwordenizer(method, model_path, glossary: List[str] = []):
     if method == 'bpe':
-        return BPE(model_path)
+        return BPE(model_path, glossary)
     elif method == 'sentencepiece':
         return SentencePiece(model_path)
     else:

@@ -275,7 +275,7 @@ def main():
 
             if orig_target is None:
                 if args.json:
-                    jobj['masked_text'] = masked_source
+                    jobj['masked_text'] = jobj['text'] = masked_source
                     jobj['masks'] = masks
                     print(json.dumps(jobj, ensure_ascii=False), flush=True)
                 else:

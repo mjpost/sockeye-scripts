@@ -24,7 +24,7 @@ class BPE(Subwordenizer):
     """
     Implements BPE.
     """
-    def __init__(self, model_path=None, glossary: Optional[List[str] = None):
+    def __init__(self, model_path=None, glossary: Optional[List[str]] = None):
         from subword_nmt import apply_bpe
         self.unsegment_re = re.compile(r'@@( |$)')
 

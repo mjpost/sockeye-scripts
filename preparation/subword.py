@@ -51,6 +51,7 @@ class SentencePiece(Subwordenizer):
     def __init__(self, model_path, alpha: float = 0.5):
         import sentencepiece as spm
         self.model = spm.SentencePieceProcessor()
+        self.model_path = model_path
         if model_path is not None:
             self.model.Load(model_path)
         self.alpha = alpha
@@ -63,7 +64,10 @@ class SentencePiece(Subwordenizer):
             return ' '.join(self.model.EncodeAsPieces(sentence))
 
     def merge(self, sentence: str) -> str:
-        return self.model.DecodePieces(sentence.split())
+        if self.model_path is not None:
+            return self.model.DecodePieces(sentence.split())
+        else:
+            return sentence.replace(' ', '').replace('▁', ' ')
         
 
 def get_subwordenizer(method, model_path, glossary: List[str] = []):

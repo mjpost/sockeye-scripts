@@ -23,4 +23,4 @@
 # https://apps.timwhitlock.info/emoji/tables/unicode
 # full: https://www.unicode.org/emoji/charts/full-emoji-modifiers.html#1f91a_1f3fb
 # ([\U0001F601-\U0001F64F\U00002702-\U000027B0\U0001F680-\U0001F6C0\U0001F170-\U0001F251\U00002122-\U00002B55]+\U0000200D*)+ ||| EMOJI
-[\u2122-\u3299\U0001f000-\U0001f9ff\u200d]+ ||| EMOJI
+[\u2122-\u2e7f\U0001f000-\U0001f9ff\u200d]+ ||| EMOJI

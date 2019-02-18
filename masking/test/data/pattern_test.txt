@@ -46,3 +46,4 @@ https://github.com/nano5th/sockeye-scripts/blob/dict/masking/patterns.txt
 http://ruder.io/optimizing-gradient-descent/index.html#adam
 ftp://mirrors.ocf.berkeley.edu/gnu/
 mailto:facepalm@jhu.edu
+⻅

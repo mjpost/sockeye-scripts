@@ -46,3 +46,4 @@ __URL__
 __URL__
 __URL__  # ftp
 mailto: __EMAIL__  # mailto not supported yet
+⻅ # do not mask this!

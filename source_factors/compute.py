@@ -11,7 +11,7 @@ import sys
 
 from typing import Iterable, List, Generator
 
-from .factors import CaseFactor, SubwordFactor
+from .factors import *
 from .broadcast import broadcast
 
 def main(args):
@@ -22,6 +22,8 @@ def main(args):
             factor_list.append(CaseFactor())
         elif factor == 'subword':
             factor_list.append(SubwordFactor())
+        elif factor == 'mask':
+            factor_list.append(MaskFactor())
         else:
             raise Exception('No such factor "{}"'.format(factor))
 

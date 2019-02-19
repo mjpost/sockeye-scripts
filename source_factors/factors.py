@@ -1,5 +1,7 @@
 # *-* encoding: utf-8 *-*
 
+import re
+
 from abc import ABC, abstractmethod
 from typing import Dict
 
@@ -132,4 +134,18 @@ class CaseFactor(Factor):
 
     def compute_json(self, jobj: Dict) -> str:
         return self.compute(jobj['tok_text'])
+        
+
+class MaskFactor(Factor):
+    def __init__(self):
+        self.mask_regex = re.compile('__[A-Za-z0-9]+(_\d+)?__')
+
+    def is_mask(self, token: str):
+        return 'Y' if self.mask_regex.match(token) else 'n'
+
+    def compute(self, segment: str) -> str:
+        return ' '.join([self.is_mask(token) for token in segment.split()])
+
+    def compute_json(self, jobj: Dict) -> str:
+        return self.compute(jobj['text'])
         

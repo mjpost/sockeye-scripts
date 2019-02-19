@@ -48,14 +48,14 @@ class SentencePiece(Subwordenizer):
     Implements SentencePiece.
     https://github.com/google/sentencepiece/blob/master/python/README.md
     """
-    def __init__(self, model_path, alpha: float = 0.5):
+    def __init__(self, model_path, sample: bool = True, alpha: float = 0.5):
         import sentencepiece as spm
         self.model = spm.SentencePieceProcessor()
         self.model_path = model_path
         if model_path is not None:
             self.model.Load(model_path)
         self.alpha = alpha
-        self.sample = True
+        self.sample = sample
 
     def segment(self, sentence) -> str:
         if self.sample:
@@ -70,11 +70,11 @@ class SentencePiece(Subwordenizer):
             return sentence.replace(' ', '').replace('▁', ' ').strip()
         
 
-def get_subwordenizer(method, model_path, glossary: List[str] = []):
+def get_subwordenizer(method, model_path, sample = False, glossary: List[str] = []):
     if method == 'bpe':
         return BPE(model_path, glossary)
     elif method == 'sentencepiece':
-        return SentencePiece(model_path)
+        return SentencePiece(model_path, sample=sample)
     else:
         return Subwordenizer()
 

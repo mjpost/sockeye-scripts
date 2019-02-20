@@ -16,10 +16,16 @@ def main(args):
         elif len(tokens) == 2:
             score1, score2 = map(float, tokens)
             source = target = None
+        else:
+            print("Need either two or four fields!", file=sys.stderr)
+            sys.exit(1)
 
         score = math.exp(-(abs(score1 - score2) + 0.5 * (score1 + score2)))
 
-        print(score, source, target, sep='\t', flush=True)
+        if source is not None:
+            print(score, source, target, sep='\t', flush=True)
+        else:
+            print(score, flush=True)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()

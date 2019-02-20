@@ -1,10 +1,10 @@
-0	ородисперсной	orodispersible	2	OOV_wrt_GI	8
-1	фармацевтики	pharmaceutics	2	OOV_wrt_I	8
-1	раздраженного	irritable	1	OOV_wrt_I	39
-1	спастических	spastic	1	OOV_wrt_GI	23
-1	срк	ibs	1	OOV_wrt_I	43
-1	панкреато-билиарной синдроме	pancreaticobiliary	1:2	OOV_wrt_GI:OOV_wrt_I	31
-2	поливинилпирролидон	polyvinylpyrrolidone	3	OOV_wrt_G	62
-2	полакрилином	polacrilin	2	OOV_wrt_GI	45
-2	диклофенака	diclofenac	2	OOV_wrt_GI	23
-2	ородисперсной	orodispersible	2	OOV_wrt_GI	9
+ородисперсной	orodispersible
+фармацевтики	pharmaceutics
+раздраженного	irritable
+спастических	spastic
+срк	ibs
+панкреато-билиарной синдроме	pancreaticobiliary
+поливинилпирролидон	polyvinylpyrrolidone
+полакрилином	polacrilin
+диклофенака	diclofenac
+ородисперсной	orodispersible

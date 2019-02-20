@@ -39,7 +39,7 @@ class TermMasker:
             self.load_patterns(file, plabel_override)
 
         for file in dict_files:
-            self.load_terms(file, dlabel_override)
+            self.load_dictionary(file, dlabel_override)
 
         self.counts = defaultdict(int)
         self.counts_missed = defaultdict(int)
@@ -48,12 +48,15 @@ class TermMasker:
         self.counts = defaultdict(int)
         self.counts_missed = defaultdict(int)
 
-    def load_terms(self, file: str, label_override: Optional[str] = None):
+    def load_dictionary(self, file: str, label_override: Optional[str] = None):
         """
         Loads dictionary terms from a file.
-                    # Dictionaries are of the (tab-separated) format:
-                    # [index into dev/test]   [$lang word or phrase]       [English word or phrase]   [counts]        [oovs]  [target index]
-                    # (allowing for extra field for label later)
+        Dictionaries are just like pattern matches except (a) they do not use regular expressions
+        and (b) the target side can be different from the source.
+
+        Their format is
+
+        source TAB target TAB label
         """
 
         with open(file, encoding='UTF-8') as infh:
@@ -62,24 +65,21 @@ class TermMasker:
                     continue
 
                 elements = line.rstrip().split('\t')
-                if len(elements) < 6 or len(elements) > 7:
-                    raise Exception('Problem loading dictionary: is it in v2 format?')
-                term = elements[1].strip()
-                translation = elements[2].strip()
+                label = self.default_label
+                if len(elements) == 2:
+                    term, replacement = elements
+                elif len(elements) == 3:
+                    term, replacement, label = elements
+                else:
+                    raise Exception('Dictionaries require two or three fields')
+
                 if label_override:
                     label = label_override
-                elif len(elements) < 7:
-                    label = self.default_label
-                else:
-                    label = elements[6].strip()
 
-                if term in self.terms:
-                    translations, label = self.terms[term]
-                    # TODO: Deal with multiple labels
-                    #   We have no way to tell which one to pick now, so just go with the first
-                    translations.add(translation)
-                else:
-                    self.terms[term] = ({translation}, label)
+                # TODO: Deal with multiple translations
+                #   We have no way to tell which one to pick now, so just go with the first
+                if term not in self.terms:
+                    self.terms[term] = (replacement, label)
 
     def load_patterns(self,
                       file: str,
@@ -186,8 +186,7 @@ class TermMasker:
         source_masks =[]
         source = orig_source
         target = orig_target
-        for term, (translations, label) in self.terms.items():
-            translation = self.translations2string(translations)
+        for term, (translation, label) in self.terms.items():
             pattern = r"\b"+re.escape(term)+r"\b"
             source, target, term_masks = self.get_label_masks(label, pattern, translation, source, target)
             source_masks.extend(term_masks)
@@ -203,30 +202,13 @@ class TermMasker:
             source_masks.extend(pattern_masks)
         return source, target, source_masks
 
-    def translations2string(self, translations: List[str]) -> str:
-        """
-        Returns a list of translations as a string.
-        """
-        if len(translations) > 1:
-            translations = list(translations)
-            translations.sort()
-            translation = str(translations)
-        else:
-            translation = ""
-            for trans in translations:
-                if translation is not "":
-                    translation = translation+"|||"+trans
-                else:
-                    translation = trans
-        return translation
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--pattern-files', '-p', nargs='+', type=str,
                         default=['{}/patterns.txt'.format(os.path.dirname(sys.argv[0]))],
                         help='List of files with patterns')
     parser.add_argument('--dict-files', '-d', nargs='+', type=str,
-                        default=['{}/dict.txt'.format(os.path.dirname(sys.argv[0]))],
+                        default=None,
                         help='List of files with terminology')
     parser.add_argument('--pattern-label', '-l', type=str,
                         default=None,

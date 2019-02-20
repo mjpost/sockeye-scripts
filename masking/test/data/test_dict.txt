@@ -1,10 +1,10 @@
-1	aubergine	eggplant	22	OOV_wrt_GI	88	NN
-1	capsicum	bell pepper	22	OOV_wrt_GI	88	NN
-1	Ministry of Defence	Defense Department	22	OOV_wrt_GI	88	NNP
-1	1stBank	1stBank	22	OOV_wrt_GI	88	NNP
-1	Fortune 500	Fortune 500	22	OOV_wrt_GI	88	NNP
-1	службы охотников за взяточниками	bribe buster service	22	OOV_wrt_GI	88	NN
-1	bank	riverside	22	OOV_wrt_GI	88	NN
-1	bank	moneyplace	22	OOV_wrt_GI	88	NN
-1	bank	roadtilt	22	OOV_wrt_GI	88	NNP
-1	bank	riverside	22	OOV_wrt_GI	88	NN
+aubergine	eggplant	NN
+capsicum	bell pepper	NN
+Ministry of Defence	Defense Department	NNP
+1stBank	1stBank	NNP
+Fortune 500	Fortune 500	NNP
+службы охотников за взяточниками	bribe buster service	NN
+bank	riverside	NN
+bank	moneyplace	NN
+bank	roadtilt	NNP
+bank	riverside	NN

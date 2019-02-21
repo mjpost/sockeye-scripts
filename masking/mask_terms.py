@@ -7,7 +7,7 @@ import regex as re
 import sys
 
 from collections import defaultdict, namedtuple
-from typing import List, Optional
+from typing import List, Optional, Tuple, Dict
 
 
 def is_comment_or_empty(s: str) -> str:
@@ -126,11 +126,11 @@ class TermMasker:
         Removes masks.
 
         """
-        unmasked = output
+        unmasked = ' {} '.format(output)
         for mask in masks:
             maskstr = mask["maskstr"]
             replacement = mask["replacement"]
-            unmasked = unmasked.replace(maskstr, " "+replacement+" ")
+            unmasked = unmasked.replace(maskstr, " " + replacement + " ")
 
         return singlespace(unmasked)
 
@@ -145,7 +145,7 @@ class TermMasker:
                         source_pattern,
                         translation,
                         source,
-                        target: Optional[str] = None):
+                        target: Optional[str] = None) -> Tuple[str, str, Dict]:
         """
         Search for `source_pattern` in `source`.
         If `target` is None, replace the matched text with `label`.
@@ -187,9 +187,11 @@ class TermMasker:
         source = orig_source
         target = orig_target
         for term, (translation, label) in self.terms.items():
-            pattern = r"\b"+re.escape(term)+r"\b"
-            source, target, term_masks = self.get_label_masks(label, pattern, translation, source, target)
-            source_masks.extend(term_masks)
+            if term in source:
+                pattern = r'\b{}\b'.format(re.escape(term))
+                source, target, term_masks = self.get_label_masks(label, pattern, translation, source, target)
+                source_masks.extend(term_masks)
+
         return source, target, source_masks
 
     def mask_by_pattern(self, orig_source, orig_target: Optional[str] = None):
@@ -205,10 +207,10 @@ class TermMasker:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--pattern-files', '-p', nargs='+', type=str,
-                        default=['{}/patterns.txt'.format(os.path.dirname(sys.argv[0]))],
+                        default=[],
                         help='List of files with patterns')
     parser.add_argument('--dict-files', '-d', nargs='+', type=str,
-                        default=None,
+                        default=[],
                         help='List of files with terminology')
     parser.add_argument('--pattern-label', '-l', type=str,
                         default=None,

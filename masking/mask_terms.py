@@ -224,6 +224,10 @@ def main():
                         help='Add an index to each mask')
     parser.add_argument('--unmask', '-u', action='store_true',
                         help='Perform unmasking')
+    parser.add_argument('--dump-masks',
+                        type=argparse.FileType('wt'),
+                        default=None,
+                        help='File to write mask JSON object to.')
     parser.set_defaults(func=lambda _: parser.print_help())
     args = parser.parse_args()
 
@@ -266,6 +270,12 @@ def main():
                     print(masked_source, flush=True)
             else:
                 print(masked_source, masked_target, sep='\t', flush=True)
+
+            if args.dump_masks:
+                if len(masks) > 0:
+                    print(json.dumps({'masks': masks}, ensure_ascii=False), flush=True, file=args.dump_masks)
+                else:
+                    print(file=args.dump_masks)
 
 if __name__ == "__main__":
     main()

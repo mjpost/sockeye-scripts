@@ -245,7 +245,8 @@ def main():
             if not args.json:
                 raise Exception('Unmasking requires json format')
 
-            output = jobj['translation']
+            # get the output from the last step, plus the masks, and unmask
+            output = jobj['text']
             masks = jobj['masks']
             unmasked = masker.unmask(output, masks)
             jobj['unmasked_translation'] = jobj['text'] = unmasked

@@ -248,7 +248,7 @@ def main():
             output = jobj['translation']
             masks = jobj['masks']
             unmasked = masker.unmask(output, masks)
-            jobj['unmasked_translation'] = unmasked
+            jobj['unmasked_translation'] = jobj['text'] = unmasked
             print(json.dumps(jobj), flush=True)
 
         else:

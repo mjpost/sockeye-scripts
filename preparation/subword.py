@@ -70,7 +70,7 @@ class SentencePiece(Subwordenizer):
             return sentence.replace(' ', '').replace('▁', ' ').strip()
         
 
-def get_subwordenizer(method, model_path, sample = False, glossary: List[str] = []):
+def get_subwordenizer(method, model_path, glossary: List[str] = [], sample = False):
     if method == 'bpe':
         return BPE(model_path, glossary)
     elif method == 'sentencepiece':

@@ -156,20 +156,15 @@ class TermMasker:
         for source_match in re.finditer(source_pattern, source):
             matched_text = source_match.group()
             replacement_text = translation if translation is not None else matched_text
-            if target is not None:
-                try:
-                    # the text to match in the target
-                    target_index = target.index(replacement_text)
-                except ValueError:
-                    target_index = None
+            is_in_target = target is not None and replacement_text in target
 
-            if target is None or target_index is not None:
+            if target is None or is_in_target:
                 self.counts[label] += 1
                 labelstr = self.get_mask_string(label, self.counts[label])
 
                 # Run the regex again so we make sure to get the exact place
-                # (str.replace here would be quicker but does not adhere to
-                #  string boundaries in the regex)
+                # (str.replace here would be quicker but may find a match in the sentence
+                #  not exactly like the matched regex)
                 source = re.sub(source_pattern, labelstr, source, 1)
                 if target is not None:
                     target = target.replace(replacement_text, labelstr, 1)

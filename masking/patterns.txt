@@ -9,7 +9,7 @@
 \B\@\w+	                      ||| HANDLE
 # https://www.regextester.com/93652
 # (http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/|ftp:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?	    ||| URL
-(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/|ftp:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/[^\(^\)]*)? ||| URL
+(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/|ftp:\/\/)?[A-Za-z0-9]+([\-\.]{1}[A-Za-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/[^\(^\)]*)? ||| URL
 \#\w+                       ||| HASHTAG
 
 # Numbers

@@ -219,12 +219,18 @@ def main():
                         help='Add an index to each mask')
     parser.add_argument('--unmask', '-u', action='store_true',
                         help='Perform unmasking')
+    parser.add_argument('--constrain', '-c', action='store_true',
+                        help='Add masks as positive constraints')
     parser.add_argument('--dump-masks',
                         type=argparse.FileType('wt'),
                         default=None,
                         help='File to write mask JSON object to.')
     parser.set_defaults(func=lambda _: parser.print_help())
     args = parser.parse_args()
+
+    if args.constrain and not args.json:
+        print("Can't add constraints with --json", file=sys.stderr)
+        sys.exit(1)
 
     masker = TermMasker(args.pattern_files, args.dict_files, add_index=args.add_index, plabel_override=args.pattern_label, dlabel_override=args.dict_label)
 
@@ -261,6 +267,10 @@ def main():
                 if args.json:
                     jobj['masked_text'] = jobj['text'] = masked_source
                     jobj['masks'] = masks
+
+                    if args.constrain:
+                        jobj['constraints'] = [mask['maskstr'] for mask in masks]
+
                     print(json.dumps(jobj, ensure_ascii=False), flush=True)
                 else:
                     print(masked_source, flush=True)

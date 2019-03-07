@@ -37,15 +37,21 @@ def main(args):
 
     for lineno, line in enumerate(sys.stdin, 1):
 
+        jobj = None
         try:
             jobj = json.loads(line)
         except ValueError:
-            if args.raw:
-                jobj = { args.input_field: line.rstrip() }
-            else:
+            if not args.raw:
                 print('JSON parsing of input on line {} failed: {}'.format(lineno, line.rstrip()), file=sys.stderr)
                 print('(Use "--raw" to magically create a JSON object with input text as field "{}")'.format(args.input_field))
                 sys.exit(1)
+
+        # Create object if not passed in and raw field was specified
+        if args.raw:
+            if type(jobj) == dict and not args.input_field in jobj:
+                jobj[args.input_field] = jobj['text']
+            else:
+                jobj = {args.input_field: line.rstrip()}
 
         arg = jobj[args.input_field] + '\n'
 

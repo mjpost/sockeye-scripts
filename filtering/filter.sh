@@ -51,11 +51,13 @@ echo "Created $numpieces pieces"
 ls $tempdir
 
 # Run all the scoring pieces
-qsub -sync y -l h_rt=2:00:00 -t 1:${numpieces} ~/code/sockeye-scripts/filtering/score.sh $tempdir/corpus.{src,trg} $model1 $tempdir/corpus.score.src-trg
-qsub -sync y -l h_rt=2:00:00 -t 1:${numpieces} ~/code/sockeye-scripts/filtering/score.sh $tempdir/corpus.{trg,src} $model1 $tempdir/corpus.score.trg-src
+qsub -sync y -l h_rt=2:00:00 -t 1:${numpieces} -j y -o $tempdir/ ~/code/sockeye-scripts/filtering/score.sh $tempdir/corpus.{src,trg} $model1 $tempdir/corpus.score.src-trg
+qsub -sync y -l h_rt=2:00:00 -t 1:${numpieces} -j y -o $tempdir/ ~/code/sockeye-scripts/filtering/score.sh $tempdir/corpus.{trg,src} $model1 $tempdir/corpus.score.trg-src
 
 # Merge
 paste <(cat $tempdir/corpus.score.src-trg*) <(cat $tempdir/corpus.score.trg-src*) | ~/code/sockeye-scripts/filtering/combine_scores.py > $output
+
+paste $source $target $output | sort -S80% -g | uniq -c > {$source,$target,$output}.sorted.uniq
 
 # cleanup
 echo "Done. Run 'rm -rf $tempdir' to cleanup"

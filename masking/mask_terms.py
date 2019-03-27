@@ -153,26 +153,42 @@ class TermMasker:
         If `translation` is None, the matched text is used to match against `target` instead.
         """
         masks = []
+        source_mods = []
+        target_mods = []
         for source_match in re.finditer(source_pattern, source):
             matched_text = source_match.group()
+            source_match_position = source_match.start()
             replacement_text = translation if translation is not None else matched_text
-            is_in_target = target is not None and replacement_text in target
+            loc_in_target = -1 if target is None else target.find(replacement_text)
 
-            if target is None or is_in_target:
+            if target is None or loc_in_target != -1:
                 self.counts[label] += 1
                 labelstr = self.get_mask_string(label, self.counts[label])
 
                 # Run the regex again so we make sure to get the exact place
                 # (str.replace here would be quicker but may find a match in the sentence
                 #  not exactly like the matched regex)
-                source = re.sub(source_pattern, labelstr, source, 1)
+                source_mods.append((source_match_position, len(matched_text), labelstr))
                 if target is not None:
-                    target = target.replace(replacement_text, labelstr, 1)
+                    target_mods.append((loc_in_target, len(replacement_text), labelstr))
 
                 mask = { "maskstr" : labelstr.strip(), "matched" : matched_text, "replacement" : replacement_text }
                 masks.append(mask)
             else:
                 self.counts_missed[label] += 1
+
+        def apply_mods(text, mod_list):
+            if mod_list:
+                offset = 0
+                for i, matched_len, mask in mod_list:
+                    i += offset
+                    text = text[0:i] + mask + text[i + matched_len:]
+                    offset += len(mask) - matched_len
+            return text
+
+        source = apply_mods(source, source_mods)
+        target = apply_mods(target, target_mods)
+
         return source, target, masks
 
     def mask_by_term(self,

@@ -15,22 +15,24 @@
 #
 # Use case 2 enables parallelization via "qsub -t START:STOP".
 #
-# A good size for files is 100k lines, which takes about 20 minutes to score on a single GPU.
+# A good size for files is 1m lines, which takes about 20 minutes to score on a single GPU.
+# You can get that with
+#
+#    mkdir tmp
+#    split --numeric-suffixes=1 -a5 -l1000000 corpus.SRC tmp/corpus.SRC. &
+#    split --numeric-suffixes=1 -a5 -l1000000 corpus.TRG tmp/corpus.TRG. &
+#    wait
+#
+# Then
+#
+#    qsub -l h_rt=2:00:00 -t 1:12  ~/code/sockeye-scripts/filtering/score.sh tmp/corpus.{SRC,TRG} /path/to/SRC-TRG/model tmp/corpus.SRC-TRG.score
+#
+# and the other way as well. Then combine scores.
 
 #$ -S /bin/bash -V
 #$ -cwd
 #$ -q gpu.q@@1080 -l gpu=1,h_rt=1:00:00,num_proc=1,mem_free=20G
 #$ -j y
-
-env | grep CUDA
-env | grep SGE
-hostname
-
-source /opt/anaconda3/etc/profile.d/conda.sh
-source deactivate
-conda activate sockeye
-
-nvidia-smi
 
 set -eu
 
@@ -41,10 +43,22 @@ trg_prefix=$2
 modeldir=$(abspath $3)
 out_prefix=$4
 
+# Debugging stuff
+echo "** score.sh $src_prefix $trg_prefix $modeldir -> $out_prefix"
+echo
+env | grep CUDA
+env | grep SGE
+hostname
+source /opt/anaconda3/etc/profile.d/conda.sh
+source deactivate
+conda activate sockeye
+nvidia-smi
+
+# score
 srcfile=$(abspath $src_prefix)
 trgfile=$(abspath $trg_prefix)
 outfile=$(abspath $out_prefix)
-if [[ ! -z $SGE_TASK_ID ]]; then
+if [[ ! -z $SGE_TASK_ID && $SGE_TASK_ID != "undefined" ]]; then
     num=$(printf %05d $SGE_TASK_ID)
     srcfile=$(abspath $src_prefix).$num
     trgfile=$(abspath $trg_prefix).$num

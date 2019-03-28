@@ -34,7 +34,10 @@ Each of these scripts and their models are assumed to be in the current director
 
 lang=${1:-fr}
 rundir=$(dirname $0)
-$rundir/sockeye_scripts/preparation/wrap_in_json -r raw_text | python $rundir/sockeye_scripts/masking/mask_terms.py --json --pattern-files /home/hltcoe/mpost/exp/robust19/patterns.txt --add-index | $rundir/sockeye_scripts/preparation/wrap_in_json text tok_text $rundir/tokenizer/moses_tokenizer | $rundir/sockeye_scripts/preparation/prepare.py --subword-type bpe --subword-model $rundir/subword.model --subword-glossary __EMAIL_1__ __EMOJI_1__ __EMOJI_2__ __HANDLE_1__ __HASHTAG_1__ __HASHTAG_10__ __HASHTAG_11__ __HASHTAG_2__ __HASHTAG_3__ __HASHTAG_4__ __HASHTAG_5__ __HASHTAG_6__ __HASHTAG_7__ __HASHTAG_8__ __HASHTAG_9__ __URL_1__ __URL_2__
+$rundir/sockeye_scripts/preparation/wrap_in_json -r raw_text \
+  | python $rundir/sockeye_scripts/masking/mask_terms.py --json --pattern-files /home/hltcoe/mpost/exp/robust19/patterns.txt --add-index \
+  | $rundir/sockeye_scripts/preparation/wrap_in_json text tok_text $rundir/tokenizer/moses_tokenizer \
+  | $rundir/sockeye_scripts/preparation/prepare.py --subword-type bpe --subword-model $rundir/subword.model --subword-glossary __EMAIL_1__ __EMOJI_1__ __EMOJI_2__ __HANDLE_1__ __HASHTAG_1__ __HASHTAG_10__ __HASHTAG_11__ __HASHTAG_2__ __HASHTAG_3__ __HASHTAG_4__ __HASHTAG_5__ __HASHTAG_6__ __HASHTAG_7__ __HASHTAG_8__ __HASHTAG_9__ __URL_1__ __URL_2__
 ```
 
 JSON is enabled in two ways:

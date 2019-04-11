@@ -48,8 +48,9 @@ def main(args):
 
         # Create object if not passed in and raw field was specified
         if args.raw:
-            if type(jobj) == dict and not args.input_field in jobj:
-                jobj[args.input_field] = jobj['text']
+            if type(jobj) == dict:
+                if not args.input_field in jobj:
+                    jobj[args.input_field] = jobj['text']
             else:
                 jobj = {args.input_field: line.rstrip()}
 

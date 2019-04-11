@@ -3,6 +3,7 @@ import argparse
 import json
 import logging
 import os
+import random
 import regex as re
 import sys
 
@@ -134,9 +135,9 @@ class TermMasker:
 
         return singlespace(unmasked)
 
-    def mask(self, orig_source, orig_target: Optional[str] = None):
-        masked_source, masked_target, term_masks = self.mask_by_term(orig_source, orig_target)
-        masked_source, masked_target, pattern_masks = self.mask_by_pattern(masked_source, masked_target)
+    def mask(self, orig_source, orig_target: Optional[str] = None, prob = 1.0):
+        masked_source, masked_target, term_masks = self.mask_by_term(orig_source, orig_target, prob)
+        masked_source, masked_target, pattern_masks = self.mask_by_pattern(masked_source, masked_target, prob)
         term_masks.extend(pattern_masks)
         return singlespace(masked_source), singlespace(masked_target), term_masks
 
@@ -145,7 +146,8 @@ class TermMasker:
                         source_pattern,
                         translation,
                         source,
-                        target: Optional[str] = None) -> Tuple[str, str, Dict]:
+                        target: Optional[str] = None,
+                        prob: float = 1.0) -> Tuple[str, str, Dict]:
         """
         Search for `source_pattern` in `source`.
         If `target` is None, replace the matched text with `label`.
@@ -164,16 +166,17 @@ class TermMasker:
             if target is None or loc_in_target != -1:
                 self.counts[label] += 1
                 labelstr = self.get_mask_string(label, self.counts[label])
-
-                # Run the regex again so we make sure to get the exact place
-                # (str.replace here would be quicker but may find a match in the sentence
-                #  not exactly like the matched regex)
-                source_mods.append((source_match_position, len(matched_text), labelstr))
-                if target is not None:
-                    target_mods.append((loc_in_target, len(replacement_text), labelstr))
-
                 mask = { "maskstr" : labelstr.strip(), "matched" : matched_text, "replacement" : replacement_text }
-                masks.append(mask)
+
+                if target is not None:
+                    if random.random() < prob:
+                        source_mods.append((source_match_position, len(matched_text), labelstr))
+                        target_mods.append((loc_in_target, len(replacement_text), labelstr))
+                        masks.append(mask)
+                else:
+                    # Always apply at test time
+                    source_mods.append((source_match_position, len(matched_text), labelstr))
+                    masks.append(mask)
             else:
                 self.counts_missed[label] += 1
 
@@ -193,56 +196,37 @@ class TermMasker:
 
     def mask_by_term(self,
                      orig_source,
-                     orig_target: Optional[str] = None):
-        source_masks =[]
+                     orig_target: Optional[str] = None,
+                     prob = 1.0):
+        """
+        Masks using dictionary entries.
+        """
+
+        source_masks = []
         source = orig_source
         target = orig_target
         for term, (translation, label) in self.terms.items():
             if term in source:
                 pattern = r'\b{}\b'.format(re.escape(term))
-                source, target, term_masks = self.get_label_masks(label, pattern, translation, source, target)
+                source, target, term_masks = self.get_label_masks(label, pattern, translation, source, target, prob)
                 source_masks.extend(term_masks)
 
         return source, target, source_masks
 
-    def mask_by_pattern(self, orig_source, orig_target: Optional[str] = None):
+    def mask_by_pattern(self, orig_source, orig_target: Optional[str] = None, prob = 1.0):
+        """
+        Masks using regex patterns.
+        """
         source_masks = []
         source = orig_source
         target = orig_target
         for pattern, label in self.patterns:
             translation = None
-            source, target, pattern_masks = self.get_label_masks(label, pattern, translation, source, target)
+            source, target, pattern_masks = self.get_label_masks(label, pattern, translation, source, target, prob)
             source_masks.extend(pattern_masks)
         return source, target, source_masks
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--pattern-files', '-p', nargs='+', type=str,
-                        default=[],
-                        help='List of files with patterns')
-    parser.add_argument('--dict-files', '-d', nargs='+', type=str,
-                        default=[],
-                        help='List of files with terminology')
-    parser.add_argument('--pattern-label', '-l', type=str,
-                        default=None,
-                        help='Override labels in pattern files with this label')
-    parser.add_argument('--dict-label', '-t', type=str,
-                        default=None,
-                        help='Override labels in dictionary files with this label')
-    parser.add_argument('--json', '-j', action='store_true',
-                        help='JSON input and output')
-    parser.add_argument('--add-index', '-i', action='store_true',
-                        help='Add an index to each mask')
-    parser.add_argument('--unmask', '-u', action='store_true',
-                        help='Perform unmasking')
-    parser.add_argument('--constrain', '-c', action='store_true',
-                        help='Add masks as positive constraints')
-    parser.add_argument('--dump-masks',
-                        type=argparse.FileType('wt'),
-                        default=None,
-                        help='File to write mask JSON object to.')
-    parser.set_defaults(func=lambda _: parser.print_help())
-    args = parser.parse_args()
+def main(args):
 
     if args.constrain and not args.json:
         print("Can't add constraints with --json", file=sys.stderr)
@@ -277,7 +261,7 @@ def main():
                 orig_source = line
                 orig_target = None
 
-            masked_source, masked_target, masks = masker.mask(orig_source, orig_target)
+            masked_source, masked_target, masks = masker.mask(orig_source, orig_target, args.prob)
 
             if orig_target is None:
                 if args.json:
@@ -300,4 +284,34 @@ def main():
                     print(file=args.dump_masks)
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--pattern-files', '-p', nargs='+', type=str,
+                        default=[],
+                        help='List of files with patterns')
+    parser.add_argument('--dict-files', '-d', nargs='+', type=str,
+                        default=[],
+                        help='List of files with terminology')
+    parser.add_argument('--pattern-label', '-l', type=str,
+                        default=None,
+                        help='Override labels in pattern files with this label')
+    parser.add_argument('--dict-label', '-t', type=str,
+                        default=None,
+                        help='Override labels in dictionary files with this label')
+    parser.add_argument('--json', '-j', action='store_true',
+                        help='JSON input and output')
+    parser.add_argument('--add-index', '-i', action='store_true',
+                        help='Add an index to each mask')
+    parser.add_argument('--unmask', '-u', action='store_true',
+                        help='Perform unmasking')
+    parser.add_argument('--constrain', '-c', action='store_true',
+                        help='Add masks as positive constraints')
+    parser.add_argument('--dump-masks',
+                        type=argparse.FileType('wt'),
+                        default=None,
+                        help='File to write mask JSON object to.')
+    parser.add_argument('--prob', type=float, default=1.0,
+                        help='Mask with specified probability. Default: %(default)s.')
+    parser.set_defaults(func=lambda _: parser.print_help())
+    args = parser.parse_args()
+
+    main(args)

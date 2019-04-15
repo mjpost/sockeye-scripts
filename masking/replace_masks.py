@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+
+"""
+Takes a source, masked source, and target, and a fast_align model.
+It runs fast_align to recover the alignments
+"""
+
 import argparse
 
 def parse_alignments(align):

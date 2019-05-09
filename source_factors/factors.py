@@ -133,7 +133,8 @@ class CaseFactor(Factor):
         return ' '.join([self.case(token) for token in segment.split()])
 
     def compute_json(self, jobj: Dict) -> str:
-        return self.compute(jobj['tok_text'])
+        field = 'tok_text' if 'tok_text' in jobj else 'raw_text'
+        return self.compute(jobj[field])
         
 
 class MaskFactor(Factor):

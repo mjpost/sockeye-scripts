@@ -24,6 +24,12 @@ def main(args):
             factor_list.append(SubwordFactor())
         elif factor == 'mask':
             factor_list.append(MaskFactor())
+        elif factor == 'url':
+            factor_list.append(URLFactor())
+        elif factor == 'number':
+            factor_list.append(NumberFactor())
+        elif factor == 'email':
+            factor_list.append(EmailFactor())
         else:
             raise Exception('No such factor "{}"'.format(factor))
 

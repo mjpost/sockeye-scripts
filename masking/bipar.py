@@ -40,7 +40,7 @@ def is_mask(tok):
 
 
 m = Munkres()
-for line in sys.stdin:
+for lineno, line in enumerate(sys.stdin, 1):
 # for line in lines:
     obj = json.loads(line)
     
@@ -57,7 +57,7 @@ for line in sys.stdin:
     for key in target_mask_str_index.keys():
         source_mask_indexes = numpy.array(sorted([ i for i in range(len(source_toks)) if source_toks[i] == key ]))
         target_mask_indexes = numpy.array(target_mask_str_index[key])
-        effective_attention = attention[source_mask_indexes, :][:, target_mask_indexes]
+        effective_attention = attention[target_mask_indexes, :][:, source_mask_indexes]
         # Munkres has shape requirements, so fool it if needed
         transpose = effective_attention.shape[0] > effective_attention.shape[1]
         if transpose:

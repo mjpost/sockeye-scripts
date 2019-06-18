@@ -50,14 +50,14 @@ for lineno, line in enumerate(sys.stdin, 1):
     for key, value in target_mask_index_str.items():
         target_mask_str_index.setdefault(value, list()).append(key)
     source_toks = obj["subword_text"].strip().split()
-    attention = -numpy.array(obj["attention"])
+    attention = -numpy.array(obj["attention"]).transpose()
     masks = obj["masks"]
 
     # for each identical mask
     for key in target_mask_str_index.keys():
         source_mask_indexes = numpy.array(sorted([ i for i in range(len(source_toks)) if source_toks[i] == key ]))
         target_mask_indexes = numpy.array(target_mask_str_index[key])
-        effective_attention = attention[target_mask_indexes, :][:, source_mask_indexes]
+        effective_attention = attention[source_mask_indexes, :][:, target_mask_indexes]
         # Munkres has shape requirements, so fool it if needed
         transpose = effective_attention.shape[0] > effective_attention.shape[1]
         if transpose:

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import json
 import sys
@@ -18,9 +20,9 @@ class Aligner:
         (fwd_T, fwd_m) = self.read_err(fwd_err)
         (rev_T, rev_m) = self.read_err(rev_err)
 
-        fwd_cmd = ['fast_align', '-i', '-', '-d', '-T', fwd_T, '-m', fwd_m, '-f', fwd_params]
-        rev_cmd = ['fast_align', '-i', '-', '-d', '-T', rev_T, '-m', rev_m, '-f', rev_params, '-r']
-        tools_cmd = ['atools', '-i', '-', '-j', '-', '-c', heuristic]
+        fwd_cmd = ['/home/hltcoe/mpost/code/fast_align/build/fast_align', '-i', '-', '-d', '-T', fwd_T, '-m', fwd_m, '-f', fwd_params]
+        rev_cmd = ['/home/hltcoe/mpost/code/fast_align/build/fast_align', '-i', '-', '-d', '-T', rev_T, '-m', rev_m, '-f', rev_params, '-r']
+        tools_cmd = ['/home/hltcoe/mpost/code/fast_align/build/atools', '-i', '-', '-j', '-', '-c', heuristic]
 
         self.fwd_align = pexpect.spawn(' '.join(fwd_cmd))
         self.rev_align = pexpect.spawn(' '.join(rev_cmd))

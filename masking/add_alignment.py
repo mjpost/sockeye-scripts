@@ -6,6 +6,7 @@ import sys
 from collections import defaultdict
 
 import pexpect
+from tqdm import tqdm
 
 '''
 Add alignment "attention" to JSON object using force_align
@@ -20,9 +21,9 @@ class Aligner:
         (fwd_T, fwd_m) = self.read_err(fwd_err)
         (rev_T, rev_m) = self.read_err(rev_err)
 
-        fwd_cmd = ['/home/hltcoe/mpost/code/fast_align/build/fast_align', '-i', '-', '-d', '-T', fwd_T, '-m', fwd_m, '-f', fwd_params]
-        rev_cmd = ['/home/hltcoe/mpost/code/fast_align/build/fast_align', '-i', '-', '-d', '-T', rev_T, '-m', rev_m, '-f', rev_params, '-r']
-        tools_cmd = ['/home/hltcoe/mpost/code/fast_align/build/atools', '-i', '-', '-j', '-', '-c', heuristic]
+        fwd_cmd = ['fast_align', '-i', '-', '-d', '-T', fwd_T, '-m', fwd_m, '-f', fwd_params]
+        rev_cmd = ['fast_align', '-i', '-', '-d', '-T', rev_T, '-m', rev_m, '-f', rev_params, '-r']
+        tools_cmd = ['atools', '-i', '-', '-j', '-', '-c', heuristic]
 
         self.fwd_align = pexpect.spawn(' '.join(fwd_cmd))
         self.rev_align = pexpect.spawn(' '.join(rev_cmd))
@@ -45,15 +46,20 @@ class Aligner:
         rev_line = self.rev_align.readline().decode().rstrip()
 
         # f words ||| e words ||| links ||| score
-        print(f'LINE: {line}\nFWD: {fwd_line}\nREV: {rev_line}', file=sys.stderr)
-        message = '{}\n{}'.format(fwd_line.split(' ||| ')[2], rev_line.split(' ||| ')[2])
+        fwd_arr = fwd_line.split('|||')
+        rev_arr = rev_line.split('|||')
+        # print('fwd_arr', fwd_arr)
+        # print('rev_arr', rev_arr)
+        if len(fwd_arr) == len(rev_arr) == 4:
+            # message = '{}\n{}'.format(fwd_line.split('|||')[2], rev_line.split('|||')[2])
+            message = fwd_arr[2].strip() + '\n' + rev_arr[2].strip()
 
-        self.tools.sendline(message)
-        self.tools.readline()  # skip 2 lines of input
-        self.tools.readline()
-        al_line = self.tools.readline().decode().rstrip()
-
-        return al_line
+            self.tools.sendline(message)
+            self.tools.readline()  # skip 2 lines of input
+            self.tools.readline()
+            return self.tools.readline().decode().rstrip()
+        else:  # bad alignment
+            return "bad"
 
     def close(self):
         self.fwd_align.close()
@@ -73,14 +79,14 @@ class Aligner:
 
 
 def parse_alignments(align):
-#    print(f'PARSING "{align}"', file=sys.stderr)
-    t2s = defaultdict(list)
-    if align == '':
-      return t2s
-    for x in align.split(' '):
-        s, t = x.split('-')
-        t2s[int(t)].append(int(s))
-    return t2s
+    if len(align) > 0 and align[0].isnumeric():
+        t2s = defaultdict(list)
+        for x in align.split(' '):
+            s, t = x.split('-')
+            t2s[int(t)].append(int(s))
+        return t2s
+    else:
+        return {}
 
 
 def distribution(n, indices):
@@ -102,7 +108,7 @@ def parseargs():
 
 def make_bitext(jobj):
     src = jobj["tok_text"]
-    tgt = jobj["merged_translation"]
+    tgt = jobj["merged_text"]
     return src + ' ||| ' + tgt
 
 
@@ -111,19 +117,17 @@ def main():
 
     aligner = Aligner(args.fwd_params, args.fwd_err, args.rev_params, args.rev_err, 'grow-diag-final-and')
 
-    for line in sys.stdin:
+    for line in tqdm(sys.stdin):
         jobj = json.loads(line)
         bitext_line = make_bitext(jobj)
+        # print('bitext line', bitext_line)
         alignments = aligner.align(bitext_line)
-#        print(f'BITEXT LINE: "{bitext_line}"', file=sys.stderr)
-        if alignments.startswith('BAD ALIGNMENT'):
-#            print('BAD ALIGNMENT, RELOADING', file=sys.stderr)
-            aligner = Aligner(args.fwd_params, args.fwd_err, args.rev_params, args.rev_err, 'grow-diag-final-and')
-            alignments = ""
+        # print('alignments', alignments)
         t2s = parse_alignments(alignments)
+        # print('t2s', t2s)
 
         src_words = jobj['tok_text'].split()
-        tgt_words = jobj['merged_translation'].split()
+        tgt_words = jobj['merged_text'].split()
         attention = []
 
         for i, _word in enumerate(tgt_words):

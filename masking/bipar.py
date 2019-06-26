@@ -44,16 +44,20 @@ for lineno, line in enumerate(sys.stdin, 1):
 # for line in lines:
     obj = json.loads(line)
     
-    target_masked_toks = obj["translation"].strip().split()  # attention is on bpe-level, so cannot use merged text
+    if 'alignment' in obj:
+        # attention is on the token level, so we need the merged text
+        source_toks = obj["tok_text"].strip().split()
+        target_masked_toks = obj["merged_translation"].strip().split()
+        attention = -numpy.array(obj['alignment']).transpose()
+    elif 'attention' in obj:
+        # attention is on bpe-level, so we need the raw output
+        source_toks = obj["subword_text"].strip().split()
+        target_masked_toks = obj["translation"].strip().split()
+        attention = -numpy.array(obj["attention"]).transpose()
     target_mask_index_str = { j: target_masked_toks[j] for j in range(len(target_masked_toks)) if is_mask(target_masked_toks[j]) }
     target_mask_str_index = {}
     for key, value in target_mask_index_str.items():
         target_mask_str_index.setdefault(value, list()).append(key)
-    source_toks = obj["subword_text"].strip().split()
-    if 'alignment' in obj:
-        attention = -numpy.array(obj['alignment']).transpose()
-    elif 'attention' in obj:
-        attention = -numpy.array(obj["attention"]).transpose()
     masks = obj["masks"]
 
     # for each identical mask

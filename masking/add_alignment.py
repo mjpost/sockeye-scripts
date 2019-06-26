@@ -108,7 +108,7 @@ def parseargs():
 
 def make_bitext(jobj):
     src = jobj["tok_text"]
-    tgt = jobj["merged_text"]
+    tgt = jobj["merged_translation"]
     return src + ' ||| ' + tgt
 
 

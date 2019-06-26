@@ -37,7 +37,7 @@ def main(args):
 
         if args.subword_type != 'none':
             if args.undo:
-                jobj['merged_text'] = jobj['text'] = subwordenizer.merge(jobj['text'])
+                jobj['merged_translation'] = jobj['text'] = subwordenizer.merge(jobj['text'])
             else:
                 jobj['subword_text'] = jobj['text'] = subwordenizer.segment(jobj['text'])
                 jobj['subword_method'] = args.subword_type

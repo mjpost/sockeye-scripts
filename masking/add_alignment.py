@@ -45,6 +45,7 @@ class Aligner:
         rev_line = self.rev_align.readline().decode().rstrip()
 
         # f words ||| e words ||| links ||| score
+        print(f'LINE: {line}\nFWD: {fwd_line}\nREV: {rev_line}', file=sys.stderr)
         message = '{}\n{}'.format(fwd_line.split(' ||| ')[2], rev_line.split(' ||| ')[2])
 
         self.tools.sendline(message)
@@ -72,7 +73,10 @@ class Aligner:
 
 
 def parse_alignments(align):
+#    print(f'PARSING "{align}"', file=sys.stderr)
     t2s = defaultdict(list)
+    if align == '':
+      return t2s
     for x in align.split(' '):
         s, t = x.split('-')
         t2s[int(t)].append(int(s))
@@ -97,8 +101,8 @@ def parseargs():
 
 
 def make_bitext(jobj):
-    src = jobj["subword_text"]
-    tgt = jobj["translation"]
+    src = jobj["tok_text"]
+    tgt = jobj["merged_translation"]
     return src + ' ||| ' + tgt
 
 
@@ -111,10 +115,15 @@ def main():
         jobj = json.loads(line)
         bitext_line = make_bitext(jobj)
         alignments = aligner.align(bitext_line)
+#        print(f'BITEXT LINE: "{bitext_line}"', file=sys.stderr)
+        if alignments.startswith('BAD ALIGNMENT'):
+#            print('BAD ALIGNMENT, RELOADING', file=sys.stderr)
+            aligner = Aligner(args.fwd_params, args.fwd_err, args.rev_params, args.rev_err, 'grow-diag-final-and')
+            alignments = ""
         t2s = parse_alignments(alignments)
 
-        src_words = jobj['subword_text'].split()
-        tgt_words = jobj['translation'].split()
+        src_words = jobj['tok_text'].split()
+        tgt_words = jobj['merged_translation'].split()
         attention = []
 
         for i, _word in enumerate(tgt_words):

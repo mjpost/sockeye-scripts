@@ -80,5 +80,5 @@ for lineno, line in enumerate(sys.stdin, 1):
 
     obj["unmasked_translation"] = " ".join(target_masked_toks)
     obj['text'] = obj['unmasked_translation']
-    print(json.dumps(obj, ensure_ascii=False))
+    print(json.dumps(obj, ensure_ascii=False), flush=True)
     

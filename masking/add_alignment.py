@@ -138,7 +138,7 @@ def main():
             attention.append(att)
 
         jobj['alignment'] = attention
-        print(json.dumps(jobj))
+        print(json.dumps(jobj, ensure_ascii=False), flush=True)
 
     aligner.close()
 

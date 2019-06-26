@@ -106,10 +106,12 @@ def parseargs():
     return parser.parse_args()
 
 
+def get_source_target(jobj):
+    return jobj['tok_text'], jobj['merged_translation']
+
+
 def make_bitext(jobj):
-    src = jobj["tok_text"]
-    tgt = jobj["merged_translation"]
-    return src + ' ||| ' + tgt
+    return ' ||| '.join(get_source_target(jobj))
 
 
 def main():
@@ -126,8 +128,9 @@ def main():
         t2s = parse_alignments(alignments)
         # print('t2s', t2s)
 
-        src_words = jobj['tok_text'].split()
-        tgt_words = jobj['merged_text'].split()
+        src, trg = get_source_target(jobj)
+        src_words = src.split()
+        tgt_words = trg.split()
         attention = []
 
         for i, _word in enumerate(tgt_words):

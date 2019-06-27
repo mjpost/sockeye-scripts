@@ -162,7 +162,11 @@ class TermMasker:
             matched_text = source_match.group()
             source_match_position = source_match.start()
             replacement_text = translation if translation is not None else matched_text
-            loc_in_target = -1 if target is None else target.find(replacement_text)
+            loc_in_target = -1
+            if target is not None:
+                match = re.search(r'\b{}\b'.format(re.escape(replacement_text)), target)
+                if match is not None:
+                    loc_in_target = match.start()
 
             if target is None or loc_in_target != -1:
                 self.counts[label] += 1
@@ -172,7 +176,7 @@ class TermMasker:
                 if target is not None:
                     if random.random() < prob:
                         source_mods.append((source_match_position, len(matched_text), labelstr))
-                        target_mods.append((loc_in_target, len(replacement_text), labelstr))
+                        target = target[0:loc_in_target] + labelstr + target[loc_in_target+len(matched_text):]
                         masks.append(mask)
                 else:
                     # Always apply at test time
@@ -180,9 +184,6 @@ class TermMasker:
                     masks.append(mask)
             else:
                 self.counts_missed[label] += 1
-
-        # sort the target mods!
-        target_mods = sorted(target_mods, key=itemgetter(0))
 
         def apply_mods(text, mod_list):
             if mod_list:
@@ -194,7 +195,6 @@ class TermMasker:
             return text
 
         source = apply_mods(source, source_mods)
-        target = apply_mods(target, target_mods)
 
         return source, target, masks
 

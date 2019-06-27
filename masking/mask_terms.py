@@ -9,6 +9,7 @@ import sys
 
 from collections import defaultdict, namedtuple
 from typing import List, Optional, Tuple, Dict
+from operator import itemgetter
 
 
 def is_comment_or_empty(s: str) -> str:
@@ -179,6 +180,9 @@ class TermMasker:
                     masks.append(mask)
             else:
                 self.counts_missed[label] += 1
+
+        # sort the target mods!
+        target_mods = sorted(target_mods, key=itemgetter(0))
 
         def apply_mods(text, mod_list):
             if mod_list:
